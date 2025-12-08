@@ -60,6 +60,30 @@
         .tab-button:not(.active):hover {
             background-color: #4b5563;
         }
+        /* Style for the confirmation modal */
+        #customConfirmModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* Initially hidden */
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #customConfirmModal.show {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="p-4 sm:p-8 flex justify-center items-start">
@@ -108,6 +132,21 @@
             Initializing Firebase authentication...
         </div>
 
+        <!-- Guía de Reglas de Storage (Oculto por defecto) -->
+        <div id="storageRuleGuidance" class="bg-red-900 border border-red-700 p-4 rounded-lg hidden">
+            <h3 class="text-xl font-bold text-red-300 mb-2 flex items-center">
+                <i data-lucide="shield-alert" class="w-5 h-5 mr-2"></i> 
+                Acción Requerida: Reglas de Firebase Storage
+            </h3>
+            <p class="text-gray-200 mb-3">Las reglas de Firebase Storage actuales están denegando el acceso a esta ruta. Configure la siguiente regla en la sección Storage de su Firebase Console:</p>
+            <div class="bg-red-800 p-3 rounded-lg font-mono text-sm overflow-x-auto text-yellow-300">
+                <pre><code>match /b/{bucket}/o/artifacts/{appId}/users/{userId}/{allPaths=**} {
+    allow read, write: if request.auth != null && request.auth.uid == userId;
+}</code></pre>
+            </div>
+            <p id="storagePathInError" class="text-xs mt-2 text-red-300"></p>
+        </div>
+
         <!-- TAB CONTENT -->
         <div id="tabContent" class="card p-6 sm:p-8 min-h-[500px]">
             
@@ -125,9 +164,9 @@
                     </div>
 
                     <!-- File Selection Display with Frame -->
-                    <div id="fileSelectionFrame" class="border-2 border-dashed border-gray-600 p-6 rounded-lg text-center transition duration-150">
+                    <div id="fileSelectionFrame" class="border-2 border-dashed border-gray-600 p-6 rounded-lg text-center transition duration-150 cursor-pointer">
                         <i data-lucide="file-audio" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
-                        <p id="selectedFileNameDisplay" class="text-gray-400">No file selected. Click "Upload" below to select a file.</p>
+                        <p id="selectedFileNameDisplay" class="text-gray-400">No file selected. Click to select a file.</p>
                     </div>
 
                     <!-- Hidden File Input -->
@@ -140,7 +179,7 @@
                     </button>
                 </div>
 
-                <!-- Upload Status -->
+                <!-- Upload Status / Alert Message Container -->
                 <div id="uploadStatusContainer" class="mt-8 p-4 bg-gray-700 rounded-lg hidden">
                     <p id="uploadFileName" class="text-sm mb-2 font-medium text-gray-200"></p>
                     <div class="w-full bg-gray-600 rounded-full h-2.5">
@@ -176,35 +215,68 @@
                     <!-- Songs will be injected here -->
                 </div>
 
-                <!-- Pagination (Placeholder) -->
+                <!-- Pagination Controls -->
                 <div id="pagination" class="flex justify-center items-center mt-6 space-x-2">
-                    <!-- Pagination buttons will be rendered here -->
+                    <button id="prevPageBtn" class="p-2 rounded-full bg-gray-600 text-white disabled:opacity-50" disabled>
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <span id="pageInfo" class="text-gray-400 text-sm">Page 1</span>
+                    <button id="nextPageBtn" class="p-2 rounded-full bg-gray-600 text-white disabled:opacity-50" disabled>
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
                 </div>
             </div>
 
         </div> <!-- End of tabContent -->
     </div> <!-- End of appContainer -->
 
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div id="customConfirmModal" class="show">
+        <div class="modal-content text-center">
+            <h3 id="confirmTitle" class="text-xl font-bold mb-4">Confirm Deletion</h3>
+            <p id="confirmMessage" class="mb-6 text-gray-300">Are you sure you want to proceed?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirmCancelBtn" class="py-2 px-4 rounded-lg bg-gray-500 hover:bg-gray-400 text-white font-semibold transition">
+                    Cancel
+                </button>
+                <button id="confirmOkBtn" class="py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Ocultar el modal al cargar (el CSS lo pone en display: none, pero este script asegura)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('customConfirmModal').classList.remove('show');
+        });
+    </script>
+
     <script type="module">
         // Importaciones de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, onSnapshot, collection, query, addDoc, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getFirestore, onSnapshot, collection, query, addDoc, orderBy, where, limit, startAfter, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // --- CONSTANTES GLOBALES ---
         const ACCESS_KEY = 'jawoHL_66';
         const ACCESS_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
         const PUBLIC_URL_BASE = 'https://twsrpmusic.blob.core.windows.net/roleplay-music/'; // URL de simulación
+        const SONGS_PER_PAGE = 10;
         
         // --- VARIABLES DE ESTADO ---
         let app;
         let db;
         let auth;
         let storage;
-        let userId = null; // Variable global para almacenar el UID del usuario autenticado
+        let userId = null; // Global user ID (for Firestore path)
+        let currentPage = 1; // Current pagination page
+        let lastVisible = null; // Last document from the previous page for pagination
+        let firstVisible = null; // First document of the current page (for reverse pagination)
+        let songsUnsubscribe = null; // Listener de Firestore
         
-        // --- ELEMENTOS DEL DOM ---
+        // --- DOM Elements ---
         const accessGate = document.getElementById('accessGate');
         const accessPassword = document.getElementById('accessPassword');
         const accessButton = document.getElementById('accessButton');
@@ -214,10 +286,8 @@
         const loginStatusMessage = document.getElementById('loginStatusMessage');
         const customNameInput = document.getElementById('customNameInput');
         const fileInput = document.getElementById('fileInput');
-        // Nuevos elementos para la selección de archivo
         const fileSelectionFrame = document.getElementById('fileSelectionFrame');
         const selectedFileNameDisplay = document.getElementById('selectedFileNameDisplay'); 
-        // Botón único
         const uploadButton = document.getElementById('uploadButton');
 
         const uploadStatusContainer = document.getElementById('uploadStatusContainer');
@@ -227,14 +297,99 @@
         const songList = document.getElementById('songList');
         const searchInput = document.getElementById('searchInput');
         const sortFilter = document.getElementById('sortFilter');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const pageInfo = document.getElementById('pageInfo');
+        
+        // Modal elements
+        const customConfirmModal = document.getElementById('customConfirmModal');
+        const confirmTitle = document.getElementById('confirmTitle');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmOkBtn = document.getElementById('confirmOkBtn');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+        // New Guidance Elements
+        const storageRuleGuidance = document.getElementById('storageRuleGuidance');
+        const storagePathInError = document.getElementById('storagePathInError');
+
 
         // --- FIREBASE PATHS ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const getPrivateCollectionRef = (collectionName) => {
             if (!userId) throw new Error("User not authenticated for private data.");
+            // Log para debug
+            console.log(`Firestore Path: artifacts/${appId}/users/${userId}/${collectionName}`);
             return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`);
         };
 
+        // ---------------------------------------------------------------------
+        // VI. UTILITIES (Alerts & Confirmations)
+        // ---------------------------------------------------------------------
+        
+        /**
+         * Muestra una alerta simple en el contenedor de estado.
+         */
+        window.alertUser = (title, message, color = 'var(--color-primary)', duration = 5000) => {
+            // Detener el proceso de carga si está activo (para no interferir con la barra)
+            if (title === "Success" || title === "Error" || title === "Input Error") {
+                uploadProgressBar.style.width = '100%';
+                uploadProgressBar.style.backgroundColor = color;
+                uploadStatusContainer.classList.remove('hidden');
+                uploadFileName.textContent = title;
+                uploadStatusText.innerHTML = message;
+                
+                // Asegurar que la guía de reglas de storage se oculte si es una alerta normal
+                if (storageRuleGuidance) {
+                    storageRuleGuidance.classList.add('hidden');
+                }
+
+                // Ocultar después de la duración especificada
+                setTimeout(() => {
+                    uploadStatusContainer.classList.add('hidden');
+                }, duration);
+            } else {
+                // Para errores fatales o mensajes que deben persistir
+                uploadStatusContainer.classList.remove('hidden');
+                uploadProgressBar.style.width = '100%';
+                uploadProgressBar.style.backgroundColor = color;
+                uploadFileName.textContent = title;
+                uploadStatusText.innerHTML = message;
+            }
+        };
+
+        /**
+         * Muestra un modal de confirmación personalizado (reemplazo de window.confirm).
+         * @param {string} title - Título del modal.
+         * @param {string} message - Mensaje del modal.
+         * @param {string} confirmText - Texto del botón de confirmación.
+         * @returns {Promise<boolean>} Promesa que se resuelve a true (OK) o false (Cancel).
+         */
+        const customConfirm = (title, message, confirmText = 'Confirm') => {
+            return new Promise(resolve => {
+                confirmTitle.textContent = title;
+                confirmMessage.textContent = message;
+                confirmOkBtn.textContent = confirmText;
+                customConfirmModal.classList.add('show');
+                
+                const handleOk = () => {
+                    customConfirmModal.classList.remove('show');
+                    confirmOkBtn.removeEventListener('click', handleOk);
+                    confirmCancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    customConfirmModal.classList.remove('show');
+                    confirmOkBtn.removeEventListener('click', handleOk);
+                    confirmCancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+                
+                confirmOkBtn.addEventListener('click', handleOk);
+                confirmCancelBtn.addEventListener('click', handleCancel);
+            });
+        };
+        
         // ---------------------------------------------------------------------
         // I. ACCESS CONTROL LOGIC (Lógica de Control de Acceso)
         // ---------------------------------------------------------------------
@@ -242,17 +397,12 @@
         const checkAccess = () => {
             const grantedUntil = localStorage.getItem('tws_access_granted');
             const now = new Date().getTime();
-
-            if (grantedUntil && now < parseInt(grantedUntil, 10)) {
-                return true; // Acceso concedido
-            }
-            return false; // Acceso expirado
+            return grantedUntil && now < parseInt(grantedUntil, 10);
         };
 
         const grantAccess = () => {
             const expiryTime = new Date().getTime() + ACCESS_DURATION_MS;
             localStorage.setItem('tws_access_granted', expiryTime.toString());
-            // Ocultar la puerta y mostrar la aplicación principal
             accessGate.classList.add('hidden');
             appContainer.classList.remove('hidden');
             initApp();
@@ -285,8 +435,10 @@
             });
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
-            // Si se cambia a la lista, forzar la carga de canciones
+            // If switching to the list, force loading songs
             if (tabId === 'list' && userId) {
+                currentPage = 1;
+                lastVisible = null;
                 setupSongsListener();
             }
         };
@@ -305,23 +457,19 @@
          * Maneja la carga de archivos de audio a Firebase Storage y guarda metadatos.
          */
         const uploadSong = async (file, customName) => {
-            // VERIFICACIÓN ESTRICTA: Usar la variable global userId.
-            const currentUserId = userId; 
-
-            if (!currentUserId) {
+            // Verificación de autenticación. El botón de subida está deshabilitado si la autenticación falla.
+            if (!auth.currentUser || !userId) {
                 window.alertUser("Error", "Authentication required. Please wait for initialization.", 'var(--color-danger)');
                 return;
             }
+            const currentUserId = userId; // Usamos el UID global ya establecido por onAuthStateChanged
 
             // Validar Custom Name
             if (!customName || customName.trim() === '') {
-                uploadStatusText.textContent = "Error: Custom Name is required.";
-                uploadProgressBar.style.backgroundColor = 'var(--color-danger)';
-                uploadStatusContainer.classList.remove('hidden');
-                setTimeout(() => uploadStatusContainer.classList.add('hidden'), 3000);
+                window.alertUser("Input Error", "Custom Name is required.", 'var(--color-danger)');
                 return;
             }
-            // Limpiar el nombre personalizado para la URL (solo letras, números y guiones)
+            // Sanitize custom name: only letters, numbers, and hyphens
             const sanitizedCustomName = customName.trim().replace(/[^a-zA-Z0-9-]/g, '-');
 
             // 1. Configuración de la interfaz de carga
@@ -332,16 +480,14 @@
             uploadStatusText.textContent = 'Starting upload...';
             uploadButton.disabled = true;
             fileSelectionFrame.classList.remove('border-blue-500');
+            storageRuleGuidance.classList.add('hidden'); // Ocultar guía al iniciar
 
-
-            // Path de almacenamiento en Firebase Storage
-            const storagePath = `tws-music/${currentUserId}/${Date.now()}_${sanitizedCustomName}`;
+            // Path de almacenamiento en Firebase Storage (USANDO LA ESTRUCTURA COMPLETA DE ARTIFACTS Y SIN TIMESTAMP)
+            // Se usa el formato: artifacts/{appId}/users/{userId}/tws-music/{customName}
+            const storagePath = `artifacts/${appId}/users/${currentUserId}/tws-music/${sanitizedCustomName}`;
             
-            // --- LOGS DE DEBUG (Se agregó log para ayudar a diagnosticar la autenticación) ---
-            console.log("DEBUG: Current Authenticated User:", auth.currentUser); 
-            console.log("DEBUG: User ID (used in path):", currentUserId);
-            console.log("DEBUG: Storage Path Attempt:", storagePath);
-            // ---------------------
+            // LOG DE DEBUG PARA VERIFICAR LA RUTA
+            console.log(`[STORAGE DEBUG] Attempting to upload for User ID: ${currentUserId} to path: ${storagePath}`);
 
             const storageRef = ref(storage, storagePath);
             const uploadTask = uploadBytesResumable(storageRef, file);
@@ -357,23 +503,32 @@
                     (error) => {
                         // 3. Manejo de Errores de Carga
                         console.error("Upload Error:", error);
-                        // Mensaje explícito para guiar al usuario a las Reglas de Storage, ahora completamente en español.
-                        uploadStatusText.innerHTML = `
-                            <span class="font-bold text-red-300">ERROR: Permiso de Almacenamiento Denegado (${error.code}).</span> 
-                            <br>
-                            <span class="text-white">Para solucionar esto, DEBE ir a la Consola de Firebase, sección Storage -> Rules, y PUBLICAR la siguiente regla:</span>
-                            <br>
-                            <code class="text-xs bg-gray-600 p-1 rounded-md mt-1 block">
-                                match /tws-music/{userId}/{allPaths=**} { <br>
-                                &nbsp;&nbsp;allow write: if request.auth != null && request.auth.uid == userId; <br>
-                                &nbsp;&nbsp;allow read; <br>
-                                }
-                            </code>
-                        `;
-                        uploadProgressBar.style.backgroundColor = 'var(--color-danger)';
-                        // Restaurar botón (manteniendo texto descriptivo para el error)
+                        
+                        const isPermissionError = error.code === 'storage/unauthorized';
+
+                        if (isPermissionError) {
+                            // MOSTRAR GUÍA DE REGLAS DE STORAGE
+                            if (storageRuleGuidance && storagePathInError) {
+                                storageRuleGuidance.classList.remove('hidden');
+                                storagePathInError.textContent = `Ruta denegada: ${storagePath}`;
+                            }
+
+                            // Mensaje de error de permiso simplificado
+                            uploadStatusText.innerHTML = `
+                                <span class="font-bold text-red-300">ERROR: Permiso de Almacenamiento Denegado.</span> 
+                                <br>
+                                <span class="text-white">Por favor, revise la sección "Acción Requerida: Reglas de Firebase Storage" arriba.</span>
+                            `;
+                            uploadButton.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mr-2"></i> ERROR DE PERMISO`;
+                            uploadProgressBar.style.backgroundColor = 'var(--color-danger)'; // Rojo para el error
+
+                        } else {
+                            uploadStatusText.textContent = `ERROR: La carga falló (${error.message}).`;
+                            uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Error de Carga`; 
+                            uploadProgressBar.style.backgroundColor = 'var(--color-danger)'; // Rojo para el error
+                        }
+
                         uploadButton.disabled = false;
-                        uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Storage Rules Error`; // Texto actualizado
                         lucide.createIcons();
                     },
                     async () => {
@@ -385,55 +540,83 @@
                         const publicLink = PUBLIC_URL_BASE + sanitizedCustomName;
 
                         const songData = {
-                            userId: currentUserId, // Usamos el ID verificado para Firestore
+                            userId: currentUserId, // Verified ID for Firestore
                             customName: sanitizedCustomName,
                             fileName: file.name,
                             storagePath: storagePath,
-                            firebaseURL: firebaseURL, // URL real para streaming/descarga
-                            publicLink: publicLink,   // URL simulada para que el usuario use
+                            firebaseURL: firebaseURL, // Real URL for streaming/download
+                            publicLink: publicLink,   // Simulated URL for user use
                             uploadedAt: new Date().toISOString(),
                         };
 
                         await addDoc(getPrivateCollectionRef('tws-songs'), songData);
                         
                         // 5. Éxito Final
-                        uploadStatusText.textContent = `Success! Link: ${publicLink}`;
-                        uploadProgressBar.style.backgroundColor = 'var(--color-secondary)';
+                        window.alertUser('Success', `Song uploaded! Link: <span class="font-semibold text-white">${publicLink}</span>`, 'var(--color-secondary)');
                         
-                        // Limpiar UI
+                        // Clean UI
                         customNameInput.value = ''; 
                         fileInput.value = ''; 
-                        selectedFileNameDisplay.textContent = "No file selected. Click 'Upload' below to select a file.";
+                        selectedFileNameDisplay.textContent = "No file selected. Click to select a file.";
+                        fileSelectionFrame.classList.remove('border-blue-500');
                         
-                        // Restaurar botón y ocultar barra después de un retraso
-                        setTimeout(() => {
-                            uploadButton.disabled = false;
-                            // Botón vuelve al estado "Upload" principal
-                            uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-                            uploadStatusContainer.classList.add('hidden');
-                            lucide.createIcons();
-                        }, 5000);
+                        // Reset button
+                        uploadButton.disabled = false;
+                        uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
+                        lucide.createIcons();
                     }
                 );
             } catch (error) {
-                // Manejo de error general
+                // General Upload Error
                 console.error("General Upload Error:", error);
-                uploadStatusText.textContent = `FATAL ERROR: ${error.message}`;
-                uploadProgressBar.style.backgroundColor = 'var(--color-danger)';
+                window.alertUser("FATAL ERROR", error.message, 'var(--color-danger)', 8000);
                 uploadButton.disabled = false;
                 uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Error - Upload`;
                 lucide.createIcons();
             }
         };
+        // FIN DEL PARCHE
 
         // ---------------------------------------------------------------------
-        // IV. LISTING AND SEARCH LOGIC (Lógica de Listado y Búsqueda)
+        // IV. LISTING AND SEARCH LOGIC (Lógica de Listado, Búsqueda y Paginación)
         // ---------------------------------------------------------------------
 
-        let songsUnsubscribe = null;
+        const deleteSong = async (songId, storagePath, customName) => {
+            // Reemplazo de window.confirm por customConfirm
+            const confirmed = await customConfirm(
+                'Confirm Deletion', 
+                `Are you sure you want to delete the song: "${customName}"? This action cannot be undone.`, 
+                'Delete'
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                // 1. Delete from Firebase Storage
+                const storageRef = ref(storage, storagePath);
+                await deleteObject(storageRef);
+                
+                // 2. Delete document from Firestore
+                const songDocRef = doc(getPrivateCollectionRef('tws-songs'), songId);
+                await deleteDoc(songDocRef);
+
+                window.alertUser('Success', `Song "${customName}" deleted successfully.`, 'var(--color-secondary)');
+                
+                // Recargar la lista
+                setupSongsListener(currentPage);
+
+            } catch (error) {
+                console.error("Error deleting song:", error);
+                window.alertUser('Deletion Error', `Could not delete song. Check console. (${error.message})`, 'var(--color-danger)');
+            }
+        };
+
+        window.deleteSong = deleteSong; // Make deleteSong available globally
 
         const renderSongs = (songs) => {
-            songList.innerHTML = ''; // Limpiar lista
+            songList.innerHTML = ''; // Clear list
             
             if (songs.length === 0) {
                 songList.innerHTML = '<p class="text-gray-400">No music links found. Try uploading some files!</p>';
@@ -446,7 +629,7 @@
                         <span class="font-medium text-lg text-white block truncate">${song.customName}</span>
                         <a href="${song.publicLink}" target="_blank" class="text-sm text-blue-400 hover:text-blue-300 truncate block">${song.publicLink}</a>
                     </div>
-                    <div class="flex items-center space-x-3 text-sm">
+                    <div class="flex items-center space-x-3 text-sm mt-2 sm:mt-0">
                         <span class="text-gray-400 hidden md:inline">${new Date(song.uploadedAt).toLocaleDateString()}</span>
                         <button class="text-blue-400 hover:text-blue-300" onclick="copyToClipboard('${song.publicLink}')">
                             <i data-lucide="copy" class="w-4 h-4"></i>
@@ -454,8 +637,8 @@
                         <a href="${song.firebaseURL}" download class="text-green-400 hover:text-green-300">
                             <i data-lucide="download" class="w-4 h-4"></i>
                         </a>
-                        <!-- Botón para eliminar (funcionalidad no implementada) -->
-                        <button class="text-red-400 hover:text-red-300" onclick="alertUser('Delete Error', 'Delete functionality not yet implemented.', 'var(--color-danger)')">
+                        <!-- Delete button, calling the global function -->
+                        <button class="text-red-400 hover:text-red-300" onclick="window.deleteSong('${song.id}', '${song.storagePath}', '${song.customName.replace(/'/g, "\\'")}')">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -466,12 +649,28 @@
             lucide.createIcons();
         };
 
+        const updatePaginationControls = (snapshotSize, hasMore) => {
+            // Update page info
+            pageInfo.textContent = `Page ${currentPage}`;
+
+            // Check if there's a previous page
+            prevPageBtn.disabled = currentPage === 1;
+
+            // Check if there's a next page (based on the snapshot size vs page limit)
+            nextPageBtn.disabled = !hasMore;
+            
+            lucide.createIcons();
+        };
+
+
         /**
-         * Configura el listener de Firestore para la lista de canciones con filtros y búsqueda.
+         * Configura el listener de Firestore para la lista de canciones con filtros y paginación.
          */
-        const setupSongsListener = () => {
+        const setupSongsListener = async (page = 1) => {
             if (songsUnsubscribe) songsUnsubscribe(); // Detener listener anterior
             if (!db || !userId) return;
+
+            songList.innerHTML = '<p class="text-gray-400">Loading songs...</p>';
 
             const searchTerm = searchInput.value.toLowerCase().trim();
             const sortBy = sortFilter.value;
@@ -486,40 +685,100 @@
                 direction = 'asc';
             }
             
+            // Build the base query
             let songsQuery = query(
                 getPrivateCollectionRef('tws-songs'),
                 orderBy(orderField, direction),
-                limit(10) // Implementación de paginación simple (muestra los primeros 10)
+                limit(SONGS_PER_PAGE + 1) // Fetch one extra document to check for 'next page'
             );
 
-            // Nota: Se usa una consulta de rango que aprovecha el índice si la búsqueda
-            // se hace por el mismo campo que el orden.
+            // If navigating forward (page > currentPage)
+            if (page > currentPage && lastVisible) {
+                songsQuery = query(songsQuery, startAfter(lastVisible));
+            } 
+            
+            // Handle Search filtering (simple startsWith logic using index range)
             if (searchTerm.length > 0) {
-                songsQuery = query(
+                 // For search, we must order by the searched field for the range query to work.
+                 // Since we cannot rely on the index being created, we simplify to a client-side friendly query 
+                 // (only one filter/order) or rely on the range query if sorting is customName.
+                 
+                 // Since the app needs to function without custom indexes, we will fetch and filter client-side
+                 // for search terms, but only apply the range query for the first letter for Firestore efficiency.
+                 
+                 songsQuery = query(
                     getPrivateCollectionRef('tws-songs'),
                     where('customName', '>=', searchTerm),
                     where('customName', '<=', searchTerm + '\uf8ff'),
-                    orderBy('customName', 'asc'),
-                    limit(10)
+                    orderBy('customName', 'asc'), // Must order by customName
+                    limit(SONGS_PER_PAGE + 1)
                 );
+                // Note: Pagination tokens (lastVisible) would be complex here, so we reset to page 1 for search results.
+                if (page > 1) {
+                    page = 1; 
+                }
             }
 
 
+            // Use onSnapshot for real-time updates on the current page/filter
             songsUnsubscribe = onSnapshot(songsQuery, (snapshot) => {
                 const songs = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
-                renderSongs(songs);
+                
+                // Determine if there is a next page
+                const hasMore = songs.length > SONGS_PER_PAGE;
+                
+                // Slice the results to the page limit
+                const songsToShow = hasMore ? songs.slice(0, SONGS_PER_PAGE) : songs;
+
+                // Update pagination tokens only if we show results
+                if (songsToShow.length > 0) {
+                    lastVisible = snapshot.docs[songsToShow.length - 1]; // Token for next page
+                    firstVisible = snapshot.docs[0]; // Token for current page start
+                } else {
+                    lastVisible = null;
+                    firstVisible = null;
+                }
+                
+                // Update current page number and controls
+                currentPage = page;
+                updatePaginationControls(songsToShow.length, hasMore);
+
+                renderSongs(songsToShow);
+
             }, (error) => {
                 console.error("Error fetching songs:", error);
                 songList.innerHTML = `<p class="text-red-400">Error loading music: ${error.message}</p>`;
             });
         };
 
-        // Escuchadores para la búsqueda y el filtro
-        searchInput.addEventListener('input', setupSongsListener);
-        sortFilter.addEventListener('change', setupSongsListener);
+        // Escuchadores para la búsqueda y el filtro/paginación
+        searchInput.addEventListener('input', () => {
+            currentPage = 1;
+            lastVisible = null; // Reset pagination on search
+            setupSongsListener(1);
+        });
+
+        sortFilter.addEventListener('change', () => {
+            currentPage = 1;
+            lastVisible = null; // Reset pagination on sort change
+            setupSongsListener(1);
+        });
+        
+        // Paginación
+        prevPageBtn.addEventListener('click', () => {
+            // Given the complexity of backward pagination with Firestore cursors, 
+            // we will simply alert the user that it's not supported in this simple version.
+            window.alertUser("Navigation Locked", "Backward navigation is not supported with simple Firestore cursors. Please use sorting/searching.", 'var(--color-primary)');
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            if (!nextPageBtn.disabled) {
+                setupSongsListener(currentPage + 1);
+            }
+        });
 
 
         // ---------------------------------------------------------------------
@@ -552,18 +811,17 @@
                 // Configurar el listener de cambio de estado de autenticación
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
+                        // Usamos el UID aquí para configurar rutas de Firestore
                         userId = user.uid;
-                        // Ocultamos el mensaje de estado en caso de éxito para una UI limpia
                         loginStatusMessage.classList.add('hidden'); 
 
                         // Habilitar controles
                         fileInput.disabled = false;
                         uploadButton.disabled = false;
-                        // Estado inicial: "Upload"
                         uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
                         
-                        // Si ya estamos en la lista, cargar los datos
-                        if (document.getElementById('tab-list').classList.contains('active')) {
+                        // Si la pestaña de lista está activa, cargar los datos
+                        if (!document.getElementById('tab-list').classList.contains('hidden')) {
                             setupSongsListener(); 
                         }
                         lucide.createIcons();
@@ -572,7 +830,7 @@
                         userId = null;
                         loginStatusMessage.textContent = "Authentication Failed. Please check console for details.";
                         loginStatusMessage.className = 'text-center text-sm text-red-400 py-2 rounded-md font-medium';
-                        loginStatusMessage.classList.remove('hidden'); // Mostrar error
+                        loginStatusMessage.classList.remove('hidden'); 
                         uploadButton.disabled = true;
                         uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Authentication Required`;
                         lucide.createIcons();
@@ -583,7 +841,7 @@
                 console.error("Firebase Initialization/Authentication Error:", error);
                 loginStatusMessage.textContent = `FATAL DB ERROR: ${error.code || error.message}`;
                 loginStatusMessage.className = 'text-center text-sm text-red-400 py-2 rounded-md font-medium';
-                loginStatusMessage.classList.remove('hidden'); // Mostrar error fatal
+                loginStatusMessage.classList.remove('hidden'); 
                 uploadButton.disabled = true;
                 uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> DB Error`;
                 lucide.createIcons();
@@ -605,48 +863,40 @@
             const customName = customNameInput.value.trim();
 
             if (file) {
-                // Actualizar la visualización del nombre de archivo y el marco
                 selectedFileNameDisplay.innerHTML = `Selected File: <span class="font-semibold text-white">${file.name}</span>`;
                 fileSelectionFrame.classList.add('border-blue-500');
 
-                // Verificar la disponibilidad de la carga
                 if (customName.length > 0) {
                     uploadButton.disabled = false;
-                    // Archivo y nombre listos: "Upload"
                     uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
                 } else {
-                    // Archivo listo, falta nombre: Deshabilitado con indicación
                     uploadButton.disabled = true;
                     uploadButton.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i> Enter Name & Upload`;
                 }
 
             } else {
-                // No se seleccionó archivo (reset)
-                selectedFileNameDisplay.textContent = "No file selected. Click 'Upload' below to select a file.";
+                selectedFileNameDisplay.textContent = "No file selected. Click to select a file.";
                 fileSelectionFrame.classList.remove('border-blue-500');
                 uploadButton.disabled = false;
-                // Vuelve al estado listo para seleccionar: "Upload"
                 uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
             }
             lucide.createIcons();
         });
 
-        // 3. Listener del campo de nombre personalizado (ajustado para el botón único)
+        // 3. Listener del campo de nombre personalizado 
         customNameInput.addEventListener('input', () => {
             const fileSelected = fileInput.files.length > 0;
             const customName = customNameInput.value.trim();
 
             if (fileSelected && customName.length > 0) {
                 uploadButton.disabled = false;
-                // Archivo y nombre listos: "Upload"
                 uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
             } else {
                 if (fileSelected) {
-                    // Archivo listo, falta nombre: Deshabilitado con indicación
                     uploadButton.disabled = true;
                     uploadButton.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i> Enter Name & Upload`;
                 } else {
-                    // Si no hay archivo, permitir la selección: "Upload"
+                    // Si no hay archivo, el botón debería funcionar como selector (click en fileInput)
                     uploadButton.disabled = false; 
                     uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
                 }
@@ -660,13 +910,10 @@
             const customName = customNameInput.value;
 
             if (!file) {
-                // No hay archivo seleccionado, abrir el selector
                 fileInput.click();
             } else if (file && customName) {
-                // Archivo y nombre listos, iniciar la carga
                 uploadSong(file, customName);
             } else {
-                // Si llegamos aquí, falta el nombre personalizado
                 window.alertUser('Input Error', 'Please enter a custom name before uploading.', 'var(--color-danger)');
             }
         });
@@ -688,22 +935,8 @@
             tempInput.select();
             document.execCommand('copy');
             document.body.removeChild(tempInput);
-            alertUser('Copied', 'Link copied to clipboard!', 'var(--color-secondary)');
+            window.alertUser('Copied', 'Link copied to clipboard!', 'var(--color-secondary)');
         };
-
-        // Función de alerta simple (reemplazo de alert())
-        window.alertUser = (title, message, color = 'var(--color-primary)') => {
-            uploadStatusContainer.classList.remove('hidden');
-            uploadFileName.textContent = title;
-            uploadStatusText.textContent = message;
-            uploadProgressBar.style.width = '100%';
-            uploadProgressBar.style.backgroundColor = color;
-            // Ocultar después de 3 segundos
-            setTimeout(() => {
-                uploadStatusContainer.classList.add('hidden');
-            }, 3000);
-        };
-
 
         // --- INICIO DE LA APLICACIÓN ---
         window.onload = () => {
