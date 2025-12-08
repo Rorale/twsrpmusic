@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loading...</title>
+    <script type="module">
+        // --- Import Firebase ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG (DEBES USAR EXACTAMENTE EL MISMO QUE index.html) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBipp_qEAamELRQJDGz7wWb6LUDyj7-cRQ",
+            authDomain: "music-host-site.firebaseapp.com",
+            projectId: "music-host-site",
+            storageBucket: "music-host-site.firebasestorage.app",
+            messagingSenderId: "761480568190",
+            appId: "1:761480568190:web:0b9ff1adbe1843c86f672f",
+            measurementId: "G-B15CZRFHK5"
+        };
+
+        // --- INIT FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- LEER EL PARAMETRO "file" ---
+        const params = new URLSearchParams(window.location.search);
+        const requestedName = params.get("file");
+
+        if (!requestedName) {
+            document.body.innerHTML = "<h2>No filename provided.</h2>";
+            throw new Error("Missing filename.");
+        }
+
+        // --- COLECCIÓN DONDE GUARDAS LOS ARCHIVOS ---
+        const SONG_COLLECTION_NAME = "uploaded_songs_cloudinary";
+
+        // --- FUNCION PRINCIPAL ---
+        async function process() {
+            document.body.innerHTML = "<p>Searching...</p>";
+
+            const colRef = collection(db, `artifacts/default-app-id/public/data/${SONG_COLLECTION_NAME}`);
+            const snapshot = await getDocs(colRef);
+
+            let found = null;
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // Coincidencia EXACTA, respetando mayúsculas/minúsculas
+                if (data.name === requestedName) {
+                    found = data;
+                }
+            });
+
+            if (!found) {
+                document.body.innerHTML = `<h2>File "${requestedName}" not found.</h2>`;
+                return;
+            }
+
+            const url = found.url;
+            if (!url) {
+                document.body.innerHTML = "<h2>File has no URL.</h2>";
+                return;
+            }
+
+            // Redirigir para descargar automáticamente
+            window.location.href = url;
+        }
+
+        process();
+    </script>
+</head>
+<body>
+    <p style="color:white;">Loading...</p>
+</body>
+</html>
