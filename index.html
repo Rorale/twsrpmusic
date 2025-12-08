@@ -189,7 +189,7 @@
         // Importaciones de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, onSnapshot, collection, query, addDoc, orderBy, where, limit, startAfter } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, onSnapshot, collection, query, addDoc, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // --- CONSTANTES GLOBALES ---
@@ -202,7 +202,7 @@
         let db;
         let auth;
         let storage;
-        let userId = null;
+        let userId = null; // Variable global para almacenar el UID del usuario autenticado
         
         // --- ELEMENTOS DEL DOM ---
         const accessGate = document.getElementById('accessGate');
@@ -305,8 +305,11 @@
          * Maneja la carga de archivos de audio a Firebase Storage y guarda metadatos.
          */
         const uploadSong = async (file, customName) => {
-            if (!userId) {
-                uploadStatusText.textContent = "Error: User not authenticated.";
+            // VERIFICACIÓN ESTRICTA: Usar la variable global userId.
+            const currentUserId = userId; 
+
+            if (!currentUserId) {
+                window.alertUser("Error", "Authentication required. Please wait for initialization.", 'var(--color-danger)');
                 return;
             }
 
@@ -332,9 +335,14 @@
 
 
             // Path de almacenamiento en Firebase Storage
-            // IMPORTANTE: Este path requiere reglas de seguridad de Storage que permitan la escritura:
-            // match /tws-music/{userId}/{allPaths=**} { allow write: if request.auth != null && request.auth.uid == userId; allow read: if true; }
-            const storagePath = `tws-music/${userId}/${Date.now()}_${sanitizedCustomName}`;
+            const storagePath = `tws-music/${currentUserId}/${Date.now()}_${sanitizedCustomName}`;
+            
+            // --- LOGS DE DEBUG (Se agregó log para ayudar a diagnosticar la autenticación) ---
+            console.log("DEBUG: Current Authenticated User:", auth.currentUser); 
+            console.log("DEBUG: User ID (used in path):", currentUserId);
+            console.log("DEBUG: Storage Path Attempt:", storagePath);
+            // ---------------------
+
             const storageRef = ref(storage, storagePath);
             const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -349,12 +357,23 @@
                     (error) => {
                         // 3. Manejo de Errores de Carga
                         console.error("Upload Error:", error);
-                        // El error "storage/unauthorized" ocurre si las reglas de seguridad de Firebase Storage no están configuradas correctamente.
-                        uploadStatusText.textContent = `ERROR: Upload failed. ${error.code}. Check Firebase Storage Rules.`;
+                        // Mensaje explícito para guiar al usuario a las Reglas de Storage, ahora completamente en español.
+                        uploadStatusText.innerHTML = `
+                            <span class="font-bold text-red-300">ERROR: Permiso de Almacenamiento Denegado (${error.code}).</span> 
+                            <br>
+                            <span class="text-white">Para solucionar esto, DEBE ir a la Consola de Firebase, sección Storage -> Rules, y PUBLICAR la siguiente regla:</span>
+                            <br>
+                            <code class="text-xs bg-gray-600 p-1 rounded-md mt-1 block">
+                                match /tws-music/{userId}/{allPaths=**} { <br>
+                                &nbsp;&nbsp;allow write: if request.auth != null && request.auth.uid == userId; <br>
+                                &nbsp;&nbsp;allow read; <br>
+                                }
+                            </code>
+                        `;
                         uploadProgressBar.style.backgroundColor = 'var(--color-danger)';
                         // Restaurar botón (manteniendo texto descriptivo para el error)
                         uploadButton.disabled = false;
-                        uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload Failed - Try Again`;
+                        uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Storage Rules Error`; // Texto actualizado
                         lucide.createIcons();
                     },
                     async () => {
@@ -366,7 +385,7 @@
                         const publicLink = PUBLIC_URL_BASE + sanitizedCustomName;
 
                         const songData = {
-                            userId: userId,
+                            userId: currentUserId, // Usamos el ID verificado para Firestore
                             customName: sanitizedCustomName,
                             fileName: file.name,
                             storagePath: storagePath,
