@@ -1,953 +1,778 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TWS RP MP3 Uploader</title>
-    <!-- Tailwind CSS -->
+    <title>TWS Music Host Site - Upload & Share</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script> 
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        /* Dark Theme Palette */
+        /* Paleta de colores Oscura */
         :root {
-            --color-bg-main: #1f2937;
-            --color-bg-card: #374151;
-            --color-text: #f3f4f6;
-            --color-input-bg: #4b5563;
-            --color-primary: #3b82f6; 
+            --color-bg-light: #1f2937; /* Fondo oscuro principal */
+            --color-bg-card: #374151; /* Fondo de tarjetas/secundario */
+            --color-text: #f3f4f6; /* Texto claro */
+            --color-input-bg: #4b5563; /* Fondo de inputs */
+            --color-primary: #3b82f6; /* Azul brillante para acciones (Upload) */
             --color-primary-hover: #2563eb;
-            --color-secondary: #10b981;
-            --color-danger: #ef4444;
+            --color-secondary: #10b981; /* Verde para éxito/copiar */
+            --color-danger: #ef4444; /* Rojo para errores/eliminar */
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--color-bg-main); 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-light);
             color: var(--color-text);
-            min-height: 100vh;
-        } 
-
+        }
+        .container { max-width: 90%; margin: 0 auto; padding: 20px; }
         .card {
             background-color: var(--color-bg-card);
-            border-radius: 0.75rem; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            border: 1px solid #4b5563; /* Borde sutil */
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .input-style {
+            background-color: var(--color-input-bg);
+            border: 1px solid #6b7280;
+            color: var(--color-text);
+            border-radius: 8px;
+        }
+        /* Botones de acción */
+        .btn-primary { background-color: var(--color-primary); color: white; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: var(--color-primary-hover); }
+        .btn-secondary { background-color: #f59e0b; color: white; transition: background-color 0.2s; }
+        .btn-secondary:hover { background-color: #d97706; }
+        .btn-danger { background-color: var(--color-danger); color: white; cursor: not-allowed; transition: background-color 0.2s; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .nav-link { cursor: pointer; padding: 8px 12px; border-radius: 6px; }
+        .nav-link.active { background-color: var(--color-primary); color: white; }
+
+        /* Player styles */
+        audio::-webkit-media-controls-panel { background-color: #4b5563; border-radius: 8px; }
+        audio { height: 40px; } /* Ajuste de altura */
+
+        /* Estilo para las tarjetas de canciones/carpetas */
+        .song-item, .folder-item, .folder-song-item {
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            background-color: #4b5563; /* Más oscuro que el fondo principal para destacar */
+            transition: box-shadow 0.2s;
+        }
+        .song-item:hover, .folder-item:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-primary {
-            background-color: var(--color-primary);
-            transition: background-color 0.2s;
-        }
-        .btn-primary:hover:not(:disabled) {
-            background-color: var(--color-primary-hover);
-        }
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .tab-button {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem 0.5rem 0 0;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .tab-button.active {
-            background-color: var(--color-bg-card);
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-        .tab-button:not(.active):hover {
-            background-color: #4b5563;
-        }
-        /* Style for the confirmation modal */
-        #customConfirmModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none; /* Initially hidden */
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        #customConfirmModal.show {
-            display: flex;
-        }
-        .modal-content {
-            background-color: var(--color-bg-card);
-            padding: 2rem;
-            border-radius: 0.75rem;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-        }
+        /* Ocultar el estado de inicio de sesión para el usuario final */
+        #login-status-message { display: none; }
     </style>
 </head>
-<body class="p-4 sm:p-8 flex justify-center items-start">
+<body class="min-h-screen p-4">
 
-    <!-- 1. ACCESS GATE (Puerta de Acceso con Contraseña) -->
-    <div id="accessGate" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex items-center justify-center">
-        <div class="card p-8 w-full max-w-sm text-center">
-            <h2 class="text-3xl font-bold mb-4 text-white">Access Required</h2>
-            <p class="text-gray-400 mb-6">Please enter the daily access key to proceed.</p>
-            
-            <input type="password" id="accessPassword" placeholder="Enter password..." 
-                   class="w-full p-3 mb-4 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 border-none">
-            
-            <button id="accessButton" class="w-full btn-primary p-3 rounded-lg text-white font-semibold">
-                Enter
-            </button>
-            <p id="accessMessage" class="text-sm mt-4 text-red-400 hidden">Incorrect or missing key.</p>
-        </div>
-    </div>
-
-    <!-- 2. MAIN APPLICATION CONTAINER -->
-    <div id="appContainer" class="w-full max-w-5xl space-y-8 hidden">
-        <header class="text-center">
-            <!-- Título con colores específicos para TWS, ahora unidos y sin espacios -->
-            <h1 class="text-4xl sm:text-5xl font-extrabold mb-2">
-                <span class="text-blue-500">T</span><span class="text-yellow-400">W</span><span class="text-red-500">S</span>
-                <span class="text-white"> Music Host Site</span>
-            </h1>
-            <!-- Descripción con texto actualizado y tamaño de fuente reducido a text-base -->
-            <p class="text-base text-gray-400">A place to upload unique music dedicated for your roleplays.<br>The max. file size is 40 MB.</p>
-        </header>
-
-        <!-- Navigation Tabs -->
-        <div class="flex border-b border-gray-600">
-            <!-- Pestaña renombrada a solo "Home" -->
-            <button class="tab-button active" data-tab="upload">
-                <i data-lucide="home" class="w-4 h-4 inline mr-2"></i> Home
-            </button>
-            <button class="tab-button" data-tab="list">
-                <i data-lucide="list" class="w-4 h-4 inline mr-2"></i> Uploaded Music Links
-            </button>
-        </div>
-
-        <!-- Authentication/Status Message (Oculto en estado normal/éxito) -->
-        <div id="loginStatusMessage" class="text-center text-sm text-yellow-400 py-2 rounded-md font-medium hidden">
-            Initializing Firebase authentication...
-        </div>
-
-        <!-- Guía de Reglas de Storage (Oculto por defecto) -->
-        <div id="storageRuleGuidance" class="bg-red-900 border border-red-700 p-4 rounded-lg hidden">
-            <h3 class="text-xl font-bold text-red-300 mb-2 flex items-center">
-                <i data-lucide="shield-alert" class="w-5 h-5 mr-2"></i> 
-                Acción Requerida: Reglas de Firebase Storage
-            </h3>
-            <p class="text-gray-200 mb-3">Las reglas de Firebase Storage actuales están denegando el acceso a esta ruta. Configure la siguiente regla en la sección Storage de su Firebase Console:</p>
-            <div class="bg-red-800 p-3 rounded-lg font-mono text-sm overflow-x-auto text-yellow-300">
-                <pre><code>match /b/{bucket}/o/artifacts/{appId}/users/{userId}/{allPaths=**} {
-    allow read, write: if request.auth != null && request.auth.uid == userId;
-}</code></pre>
+    <header class="flex justify-between items-center py-4 border-b border-gray-600 mb-6">
+        <h1 class="text-3xl font-extrabold text-gray-100">TWS Music Host Site</h1>
+        <nav class="flex items-center space-x-2">
+            <div class="flex space-x-2">
+                <span id="nav-home" class="nav-link active font-medium" data-view="home">Home & Upload</span>
+                <span id="nav-folders" class="nav-link font-medium" data-view="folders">Folders</span>
             </div>
-            <p id="storagePathInError" class="text-xs mt-2 text-red-300"></p>
-        </div>
+            <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-700 transition" onclick="showModal('settingsModal')">
+                <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
+            </button>
+        </nav>
+    </header>
 
-        <!-- TAB CONTENT -->
-        <div id="tabContent" class="card p-6 sm:p-8 min-h-[500px]">
-            
-            <!-- UPLOAD TAB (Initial View) -->
-            <div id="tab-upload" class="tab-pane">
-                <h2 class="text-2xl font-semibold mb-6">Upload your MP3s here</h2>
-                
-                <div class="space-y-6">
-                    <!-- Custom Name Input -->
+    <div id="main-content-container">
+
+        <div id="home-view" class="lg:flex lg:space-x-8">
+            <div id="upload-card" class="w-full lg:w-1/2 p-6 card mb-8 lg:mb-0">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-100">Upload your MP3s here</h2>
+
+                <div id="upload-status" class="hidden p-3 rounded-lg text-sm mb-4 font-semibold" role="alert"></div>
+
+                <form id="uploadForm" class="space-y-6">
+                    <p class="text-red-400 text-sm font-semibold">
+                        Note: Max. file size upload is 40MB. The use of this site is intended for RP purposes only.
+                    </p>
+
                     <div>
-                        <label for="customNameInput" class="block text-sm font-medium text-gray-300 mb-2">Custom Name (Link Suffix)</label>
-                        <input type="text" id="customNameInput" placeholder="my-awesome-song" 
-                               class="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 border-none">
-                        <p class="text-xs text-gray-400 mt-1">Avoid a long name. This will be the name in the public URL. E.g., `https://.../roleplay-music/my-awesome-song`</p>
+                        <label for="mp3File" class="block text-sm font-medium mb-1 text-gray-300">Choose MP3 File</label>
+                        <input type="file" id="mp3File" accept="audio/mp3" required class="input-style p-3 w-full rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-800 file:text-blue-200 hover:file:bg-blue-700">
                     </div>
 
-                    <!-- File Selection Display with Frame -->
-                    <div id="fileSelectionFrame" class="border-2 border-dashed border-gray-600 p-6 rounded-lg text-center transition duration-150 cursor-pointer">
-                        <i data-lucide="file-audio" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
-                        <p id="selectedFileNameDisplay" class="text-gray-400">No file selected. Click to select a file.</p>
+                    <div>
+                        <label for="customName" class="block text-sm font-medium mb-1 text-gray-300">Custom Name (Used for URL)</label>
+                        <input type="text" id="customName" placeholder="Ex: Airship (will be airship.mp3 in URL)" class="input-style p-3 w-full rounded-lg">
                     </div>
-
-                    <!-- Hidden File Input -->
-                    <input type="file" id="fileInput" accept="audio/mp3,audio/mpeg" class="hidden" disabled>
                     
-                    <!-- Single Action Button (Ahora dice siempre "Upload" en estado listo) -->
-                    <button id="uploadButton" class="btn-primary w-full p-3 rounded-lg text-white font-semibold flex items-center justify-center" disabled>
-                        <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
-                        Upload
+                    <button type="submit" id="uploadButton" class="w-full py-3 rounded-lg font-bold text-lg btn-danger" disabled>
+                        DB Configuration MISSING
                     </button>
-                </div>
 
-                <!-- Upload Status / Alert Message Container -->
-                <div id="uploadStatusContainer" class="mt-8 p-4 bg-gray-700 rounded-lg hidden">
-                    <p id="uploadFileName" class="text-sm mb-2 font-medium text-gray-200"></p>
-                    <div class="w-full bg-gray-600 rounded-full h-2.5">
-                        <div id="uploadProgressBar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    <div id="login-status-message" class="text-center text-sm text-gray-400 py-2 rounded-md">
+                        Please log in to access the system.
                     </div>
-                    <p id="uploadStatusText" class="text-xs text-gray-400 mt-2"></p>
-                </div>
+                </form>
             </div>
 
-            <!-- LIST TAB (Initially Hidden) -->
-            <div id="tab-list" class="tab-pane hidden">
-                <h2 class="text-2xl font-semibold mb-6">Available Music Links</h2>
+            <div id="links-card" class="w-full lg:w-1/2 p-6 card">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-100">Uploaded Music Links</h2>
                 
-                <!-- Controls: Search and Filters -->
-                <div class="flex flex-col md:flex-row gap-4 mb-6">
-                    <div class="relative flex-grow">
-                        <input type="text" id="searchInput" placeholder="Search song by name (e.g., 1m)" 
-                               class="w-full p-3 pl-10 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 border-none">
-                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                <div id="loading-spinner" class="hidden text-center py-10">
+                    <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
+                    <p class="text-blue-400 mt-2">Cargando canciones...</p>
+                </div>
+
+                <p class="text-right text-gray-400 mb-4">Total: <span id="song-count" class="font-bold">0</span> songs</p>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="search-input" placeholder="Search song by name..." class="input-style p-3 rounded-lg w-full sm:w-2/3">
+                    <div class="flex space-x-2 text-sm text-gray-300 font-medium">
+                        <label><input type="radio" name="sort" value="alpha" class="text-blue-400"> Alphabetical</label>
+                        <label><input type="radio" name="sort" value="newest" checked class="text-blue-400"> Newest</label>
+                        <label><input type="radio" name="sort" value="oldest" class="text-blue-400"> Oldest</label>
                     </div>
-                    
-                    <select id="sortFilter" 
-                            class="p-3 rounded-lg bg-gray-700 text-white focus:ring-blue-500 focus:border-blue-500 border-none appearance-none">
-                        <option value="newest">Newest to Oldest</option>
-                        <option value="oldest">Oldest to Newest</option>
-                        <option value="alpha">Alphabetical</option>
-                    </select>
                 </div>
 
-                <!-- Song List -->
-                <div id="songList" class="space-y-3">
-                    <p class="text-gray-400">Loading songs or no songs found.</p>
-                    <!-- Songs will be injected here -->
+                <div id="music-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                    <div id="no-songs-message" class="text-center text-gray-500 mt-10 hidden">
+                        No hay canciones subidas todavía. ¡Sube la primera!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="folders-view" class="hidden p-6 card">
+            <div id="folders-main-content">
+                <div class="flex justify-between items-center mb-6 border-b border-gray-600 pb-4">
+                    <h2 class="text-2xl font-bold text-gray-100">User Folders (Playlists)</h2>
+                    <button class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" onclick="showModal('createFolderModal')">
+                        <i data-lucide="folder-plus" class="w-5 h-5 inline mr-1"></i> Create New Folder
+                    </button>
                 </div>
 
-                <!-- Pagination Controls -->
-                <div id="pagination" class="flex justify-center items-center mt-6 space-x-2">
-                    <button id="prevPageBtn" class="p-2 rounded-full bg-gray-600 text-white disabled:opacity-50" disabled>
-                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                    </button>
-                    <span id="pageInfo" class="text-gray-400 text-sm">Page 1</span>
-                    <button id="nextPageBtn" class="p-2 rounded-full bg-gray-600 text-white disabled:opacity-50" disabled>
-                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                    </button>
+                <div id="folder-loading-spinner" class="hidden text-center py-10">
+                    <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
+                    <p class="text-blue-400 mt-2">Cargando carpetas...</p>
+                </div>
+                
+                <div id="folders-list" class="space-y-4 min-h-[400px]">
+                    <div id="no-folders-message" class="text-center text-gray-500 mt-10">
+                        No hay carpetas creadas. Sé el primero en crear una.
+                    </div>
                 </div>
             </div>
 
-        </div> <!-- End of tabContent -->
-    </div> <!-- End of appContainer -->
+            <div id="folder-detail-view" class="hidden mt-8 p-6 card w-full">
+                <button id="back-to-folders-btn" class="text-blue-400 hover:text-blue-300 mb-4 font-semibold">&larr; Back to Folders</button>
+                <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
+                    <h3 id="folder-detail-name" class="text-3xl font-bold text-yellow-400"></h3>
+                    <p class="text-sm text-gray-400">Owner: <span id="folder-detail-owner" class="font-medium"></span></p>
+                </div>
+                
+                <p class="text-gray-400 mb-4">Drag and drop songs below to reorder your playlist.</p>
+                
+                <div id="folder-songs-list" class="space-y-3">
+                    </div>
 
-    <!-- CUSTOM CONFIRMATION MODAL -->
-    <div id="customConfirmModal" class="show">
-        <div class="modal-content text-center">
-            <h3 id="confirmTitle" class="text-xl font-bold mb-4">Confirm Deletion</h3>
-            <p id="confirmMessage" class="mb-6 text-gray-300">Are you sure you want to proceed?</p>
-            <div class="flex justify-center space-x-4">
-                <button id="confirmCancelBtn" class="py-2 px-4 rounded-lg bg-gray-500 hover:bg-gray-400 text-white font-semibold transition">
-                    Cancel
-                </button>
-                <button id="confirmOkBtn" class="py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition">
-                    Delete
-                </button>
+                <div class="mt-6 flex justify-end">
+                    <button id="save-order-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" disabled>
+                        Save Order
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+    
+    <footer class="mt-8 pt-4 text-center text-sm text-gray-400 border-t border-gray-600">
+        &copy; 2025 made by Rorale. All rights reserved.
+    </footer>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Settings</h3>
+            <p class="text-sm text-yellow-300 mb-4">
+                ⚠️ **Permisos de DB:** Si no puedes guardar, verifica que tus Reglas de Seguridad de Firestore permitan *lectura y escritura* en las colecciones públicas.
+            </p>
+            <div id="nickname-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
+
+            <label for="nickname-input" class="block text-sm font-medium mb-1 text-gray-300">Your Nickname</label>
+            <input type="text" id="nickname-input" class="input-style p-2 w-full mb-4" placeholder="Enter your desired nickname">
+            
+            <div class="flex justify-end space-x-2">
+                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('settingsModal')">Close</button>
+                <button id="save-nickname-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition">Save Nickname</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createFolderModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Create New Folder</h3>
+            <div id="folder-creation-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
+
+            <label for="folder-name-input" class="block text-sm font-medium mb-1 text-gray-300">Folder Name</label>
+            <input type="text" id="folder-name-input" class="input-style p-2 w-full mb-4" placeholder="Ex: Best of RPGs OST">
+            
+            <div class="flex justify-end space-x-2">
+                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('createFolderModal')">Cancel</button>
+                <button id="create-folder-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition">Create Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addSongModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Add "<span id="song-to-add-name" class="text-yellow-400"></span>" to Folder</h3>
+            <div id="add-song-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
+
+            <label for="folder-select" class="block text-sm font-medium mb-1 text-gray-300">Select Folder</label>
+            <select id="folder-select" class="input-style p-2 w-full mb-4">
+                <option value="" disabled selected>-- Select a folder --</option>
+            </select>
+            
+            <div class="flex justify-end space-x-2">
+                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('addSongModal')">Cancel</button>
+                <button id="confirm-add-song-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition" disabled>Add Song</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Ocultar el modal al cargar (el CSS lo pone en display: none, pero este script asegura)
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('customConfirmModal').classList.remove('show');
-        });
+        // Hacemos que estas funciones sean globales y accesibles desde el atributo onclick="" del HTML.
+        function showModal(id) {
+            document.getElementById(id)?.classList.remove('hidden');
+        }
+
+        function hideModal(id) {
+            document.getElementById(id)?.classList.add('hidden');
+        }
+        
+        // Función para copiar URL - Necesaria para el botón que hemos completado
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                // Pequeño feedback visual o console log
+                console.log('URL copied:', url);
+            }).catch(err => {
+                console.error('Could not copy URL: ', err);
+            });
+        }
     </script>
 
+
     <script type="module">
-        // Importaciones de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, onSnapshot, collection, query, addDoc, orderBy, where, limit, startAfter, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Añadida importación de 'orderBy' que es una función de uso común en las queries de Firestore.
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc, updateDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONSTANTES GLOBALES ---
-        const ACCESS_KEY = 'jawoHL_66';
-        const ACCESS_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
-        const PUBLIC_URL_BASE = 'https://twsrpmusic.blob.core.windows.net/roleplay-music/'; // URL de simulación
-        const SONGS_PER_PAGE = 10;
-        
-        // --- VARIABLES DE ESTADO ---
-        let app;
-        let db;
-        let auth;
-        let storage;
-        let userId = null; // Global user ID (for Firestore path)
-        let currentPage = 1; // Current pagination page
-        let lastVisible = null; // Last document from the previous page for pagination
-        let firstVisible = null; // First document of the current page (for reverse pagination)
-        let songsUnsubscribe = null; // Listener de Firestore
-        
-        // --- DOM Elements ---
-        const accessGate = document.getElementById('accessGate');
-        const accessPassword = document.getElementById('accessPassword');
-        const accessButton = document.getElementById('accessButton');
-        const accessMessage = document.getElementById('accessMessage');
-        const appContainer = document.getElementById('appContainer');
+        // Inicializar iconos de Lucide
+        lucide.createIcons();
 
-        const loginStatusMessage = document.getElementById('loginStatusMessage');
-        const customNameInput = document.getElementById('customNameInput');
-        const fileInput = document.getElementById('fileInput');
-        const fileSelectionFrame = document.getElementById('fileSelectionFrame');
-        const selectedFileNameDisplay = document.getElementById('selectedFileNameDisplay'); 
+        // --- FUNCIONES DE UTILIDAD PARA CLOUDINARY ---
+        // Función para limpiar una cadena y hacerla segura para URL/Public ID, manteniendo la capitalización.
+        function createSafePublicId(text) {
+            return text
+                .trim()
+                // Eliminar caracteres problemáticos de Cloudinary/filesystem, pero mantener A-Z y a-z
+                .replace(/[\\/:*?"<>|&#]/g, '')
+                // Reemplazar espacios, guiones y puntos con guión bajo (underscore)
+                .replace(/[\s\-\.]+/g, '_');
+        }
+        // --- FIN FUNCIONES DE UTILIDAD ---
+
+        // Configuración Global y Variables
+        // Usamos el Project ID como fallback si no está definido en el entorno
+        const firebaseConfig = getFirebaseConfig();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Variables de Firebase
+        let app, db, auth, userId = null;
+        let isAuthReady = false;
+
+        // --- CONFIGURACIÓN DE CLOUDINARY (IMPORTANTE) ---
+        // TODO: Asegúrate de reemplazar "daj3jaqd9" y "tws_music_uploads" con tus valores reales.
+        const CLOUDINARY_CONFIG = {
+            cloudName: "daj3jaqd9",
+            uploadPreset: "tws_music_uploads",
+            folder: "music"
+        };
+        // --- FIN CONFIGURACIÓN CLOUDINARY ---
+
+        // --- CONFIGURACIÓN DE FIRESTORE ---
+        const SONG_COLLECTION_NAME = 'uploaded_songs_cloudinary'; // Catálogo de canciones
+        const PROFILE_COLLECTION_NAME = 'user_profiles'; // Catálogo de perfiles/nicknames
+        const FOLDER_COLLECTION_NAME = 'user_folders'; // Catálogo de carpetas
+
+        // Elementos del DOM
         const uploadButton = document.getElementById('uploadButton');
-
-        const uploadStatusContainer = document.getElementById('uploadStatusContainer');
-        const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const uploadFileName = document.getElementById('uploadFileName');
-        const uploadStatusText = document.getElementById('uploadStatusText');
-        const songList = document.getElementById('songList');
-        const searchInput = document.getElementById('searchInput');
-        const sortFilter = document.getElementById('sortFilter');
-        const prevPageBtn = document.getElementById('prevPageBtn');
-        const nextPageBtn = document.getElementById('nextPageBtn');
-        const pageInfo = document.getElementById('pageInfo');
+        const uploadStatus = document.getElementById('upload-status');
+        const uploadForm = document.getElementById('uploadForm');
+        const mp3File = document.getElementById('mp3File'); // Añadida referencia para el evento
+        const customNameInput = document.getElementById('customName'); // Añadida referencia para el evento
+        const musicList = document.getElementById('music-list');
+        const songCountElement = document.getElementById('song-count');
+        const loginStatusMessage = document.getElementById('login-status-message');
+        const searchInput = document.getElementById('search-input');
+        const sortRadios = document.querySelectorAll('input[name="sort"]');
+        const noSongsMessage = document.getElementById('no-songs-message');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const foldersList = document.getElementById('folders-list');
+        const noFoldersMessage = document.getElementById('no-folders-message');
+        const saveOrderBtn = document.getElementById('save-order-btn');
+        const folderDetailView = document.getElementById('folder-detail-view');
+        const foldersMainContent = document.getElementById('folders-main-content');
+        const homeView = document.getElementById('home-view');
+        const foldersView = document.getElementById('folders-view');
+        const backToFoldersBtn = document.getElementById('back-to-folders-btn');
         
-        // Modal elements
-        const customConfirmModal = document.getElementById('customConfirmModal');
-        const confirmTitle = document.getElementById('confirmTitle');
-        const confirmMessage = document.getElementById('confirmMessage');
-        const confirmOkBtn = document.getElementById('confirmOkBtn');
-        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+        // Estado de la interfaz
+        let allSongs = [];
+        let userProfiles = {}; // Cache para nicknames
+        let allFolders = [];
+        let currentView = 'home';
+        let currentFolderId = null;
+        let songToAddMetadata = null;
 
-        // New Guidance Elements
-        const storageRuleGuidance = document.getElementById('storageRuleGuidance');
-        const storagePathInError = document.getElementById('storagePathInError');
+        // Función para obtener la configuración (DATOS INSERTADOS AQUÍ)
+        function getFirebaseConfig() {
+            // --- CONFIGURACIÓN MANUAL DE FIREBASE INSERTADA (BLOQUE PROPORCIONADO POR EL USUARIO) ---
+            const YOUR_FIREBASE_CONFIG = {
+                apiKey: "AIzaSyBipp_qEAamELRQJDGz7wWb6LUDyj7-cRQ",
+                authDomain: "music-host-site.firebaseapp.com",
+                projectId: "music-host-site",
+                storageBucket: "music-host-site.firebasestorage.app",
+                messagingSenderId: "761480568190",
+                appId: "1:761480568190:web:0b9ff1adbe1843c86f672f",
+                measurementId: "G-B15CZRFHK5"
+            };
+            // --- FIN CONFIGURACIÓN MANUAL DE FIREBASE ---
 
-
-        // --- FIREBASE PATHS ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const getPrivateCollectionRef = (collectionName) => {
-            if (!userId) throw new Error("User not authenticated for private data.");
-            // Log para debug
-            console.log(`Firestore Path: artifacts/${appId}/users/${userId}/${collectionName}`);
-            return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`);
-        };
-
-        // ---------------------------------------------------------------------
-        // VI. UTILITIES (Alerts & Confirmations)
-        // ---------------------------------------------------------------------
-        
-        /**
-         * Muestra una alerta simple en el contenedor de estado.
-         */
-        window.alertUser = (title, message, color = 'var(--color-primary)', duration = 5000) => {
-            // Detener el proceso de carga si está activo (para no interferir con la barra)
-            if (title === "Success" || title === "Error" || title === "Input Error") {
-                uploadProgressBar.style.width = '100%';
-                uploadProgressBar.style.backgroundColor = color;
-                uploadStatusContainer.classList.remove('hidden');
-                uploadFileName.textContent = title;
-                uploadStatusText.innerHTML = message;
-                
-                // Asegurar que la guía de reglas de storage se oculte si es una alerta normal
-                if (storageRuleGuidance) {
-                    storageRuleGuidance.classList.add('hidden');
-                }
-
-                // Ocultar después de la duración especificada
-                setTimeout(() => {
-                    uploadStatusContainer.classList.add('hidden');
-                }, duration);
-            } else {
-                // Para errores fatales o mensajes que deben persistir
-                uploadStatusContainer.classList.remove('hidden');
-                uploadProgressBar.style.width = '100%';
-                uploadProgressBar.style.backgroundColor = color;
-                uploadFileName.textContent = title;
-                uploadStatusText.innerHTML = message;
-            }
-        };
-
-        /**
-         * Muestra un modal de confirmación personalizado (reemplazo de window.confirm).
-         * @param {string} title - Título del modal.
-         * @param {string} message - Mensaje del modal.
-         * @param {string} confirmText - Texto del botón de confirmación.
-         * @returns {Promise<boolean>} Promesa que se resuelve a true (OK) o false (Cancel).
-         */
-        const customConfirm = (title, message, confirmText = 'Confirm') => {
-            return new Promise(resolve => {
-                confirmTitle.textContent = title;
-                confirmMessage.textContent = message;
-                confirmOkBtn.textContent = confirmText;
-                customConfirmModal.classList.add('show');
-                
-                const handleOk = () => {
-                    customConfirmModal.classList.remove('show');
-                    confirmOkBtn.removeEventListener('click', handleOk);
-                    confirmCancelBtn.removeEventListener('click', handleCancel);
-                    resolve(true);
-                };
-
-                const handleCancel = () => {
-                    customConfirmModal.classList.remove('show');
-                    confirmOkBtn.removeEventListener('click', handleOk);
-                    confirmCancelBtn.removeEventListener('click', handleCancel);
-                    resolve(false);
-                };
-                
-                confirmOkBtn.addEventListener('click', handleOk);
-                confirmCancelBtn.addEventListener('click', handleCancel);
-            });
-        };
-        
-        // ---------------------------------------------------------------------
-        // I. ACCESS CONTROL LOGIC (Lógica de Control de Acceso)
-        // ---------------------------------------------------------------------
-        
-        const checkAccess = () => {
-            const grantedUntil = localStorage.getItem('tws_access_granted');
-            const now = new Date().getTime();
-            return grantedUntil && now < parseInt(grantedUntil, 10);
-        };
-
-        const grantAccess = () => {
-            const expiryTime = new Date().getTime() + ACCESS_DURATION_MS;
-            localStorage.setItem('tws_access_granted', expiryTime.toString());
-            accessGate.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            initApp();
-        };
-
-        const handleAccessAttempt = () => {
-            if (accessPassword.value === ACCESS_KEY) {
-                accessMessage.classList.add('hidden');
-                grantAccess();
-            } else {
-                accessMessage.textContent = "Incorrect key. Please try again.";
-                accessMessage.classList.remove('hidden');
-                accessPassword.value = '';
-            }
-        };
-
-        // ---------------------------------------------------------------------
-        // II. UI NAVIGATION (Navegación de UI)
-        // ---------------------------------------------------------------------
-
-        const switchTab = (tabId) => {
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active', 'bg-gray-700');
-                if (btn.dataset.tab === tabId) {
-                    btn.classList.add('active');
-                }
-            });
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.add('hidden');
-            });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-
-            // If switching to the list, force loading songs
-            if (tabId === 'list' && userId) {
-                currentPage = 1;
-                lastVisible = null;
-                setupSongsListener();
-            }
-        };
-
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
-            });
-        });
-
-        // ---------------------------------------------------------------------
-        // III. UPLOAD LOGIC (Lógica de Subida)
-        // ---------------------------------------------------------------------
-
-        /**
-         * Maneja la carga de archivos de audio a Firebase Storage y guarda metadatos.
-         */
-        const uploadSong = async (file, customName) => {
-            // Verificación de autenticación. El botón de subida está deshabilitado si la autenticación falla.
-            if (!auth.currentUser || !userId) {
-                window.alertUser("Error", "Authentication required. Please wait for initialization.", 'var(--color-danger)');
-                return;
-            }
-            const currentUserId = userId; // Usamos el UID global ya establecido por onAuthStateChanged
-
-            // Validar Custom Name
-            if (!customName || customName.trim() === '') {
-                window.alertUser("Input Error", "Custom Name is required.", 'var(--color-danger)');
-                return;
-            }
-            // Sanitize custom name: only letters, numbers, and hyphens
-            const sanitizedCustomName = customName.trim().replace(/[^a-zA-Z0-9-]/g, '-');
-
-            // 1. Configuración de la interfaz de carga
-            uploadStatusContainer.classList.remove('hidden');
-            uploadFileName.textContent = `File: ${file.name}`;
-            uploadProgressBar.style.width = '0%';
-            uploadProgressBar.style.backgroundColor = 'var(--color-primary)';
-            uploadStatusText.textContent = 'Starting upload...';
-            uploadButton.disabled = true;
-            fileSelectionFrame.classList.remove('border-blue-500');
-            storageRuleGuidance.classList.add('hidden'); // Ocultar guía al iniciar
-
-            // Path de almacenamiento en Firebase Storage (USANDO LA ESTRUCTURA COMPLETA DE ARTIFACTS Y SIN TIMESTAMP)
-            // Se usa el formato: artifacts/{appId}/users/{userId}/tws-music/{customName}
-            const storagePath = `artifacts/${appId}/users/${currentUserId}/tws-music/${sanitizedCustomName}`;
-            
-            // LOG DE DEBUG PARA VERIFICAR LA RUTA
-            console.log(`[STORAGE DEBUG] Attempting to upload for User ID: ${currentUserId} to path: ${storagePath}`);
-
-            const storageRef = ref(storage, storagePath);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            try {
-                // 2. Monitoreo de Progreso
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        uploadProgressBar.style.width = `${progress.toFixed(0)}%`;
-                        uploadStatusText.textContent = `Uploading: ${progress.toFixed(0)}%`;
-                    },
-                    (error) => {
-                        // 3. Manejo de Errores de Carga
-                        console.error("Upload Error:", error);
-                        
-                        const isPermissionError = error.code === 'storage/unauthorized';
-
-                        if (isPermissionError) {
-                            // MOSTRAR GUÍA DE REGLAS DE STORAGE
-                            if (storageRuleGuidance && storagePathInError) {
-                                storageRuleGuidance.classList.remove('hidden');
-                                storagePathInError.textContent = `Ruta denegada: ${storagePath}`;
-                            }
-
-                            // Mensaje de error de permiso simplificado
-                            uploadStatusText.innerHTML = `
-                                <span class="font-bold text-red-300">ERROR: Permiso de Almacenamiento Denegado.</span> 
-                                <br>
-                                <span class="text-white">Por favor, revise la sección "Acción Requerida: Reglas de Firebase Storage" arriba.</span>
-                            `;
-                            uploadButton.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mr-2"></i> ERROR DE PERMISO`;
-                            uploadProgressBar.style.backgroundColor = 'var(--color-danger)'; // Rojo para el error
-
-                        } else {
-                            uploadStatusText.textContent = `ERROR: La carga falló (${error.message}).`;
-                            uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Error de Carga`; 
-                            uploadProgressBar.style.backgroundColor = 'var(--color-danger)'; // Rojo para el error
-                        }
-
-                        uploadButton.disabled = false;
-                        lucide.createIcons();
-                    },
-                    async () => {
-                        // 4. Carga Completa: Obtener URL y Guardar en Firestore
-                        uploadStatusText.textContent = 'Upload complete. Saving metadata...';
-                        const firebaseURL = await getDownloadURL(uploadTask.snapshot.ref);
-
-                        // Simular la URL pública deseada
-                        const publicLink = PUBLIC_URL_BASE + sanitizedCustomName;
-
-                        const songData = {
-                            userId: currentUserId, // Verified ID for Firestore
-                            customName: sanitizedCustomName,
-                            fileName: file.name,
-                            storagePath: storagePath,
-                            firebaseURL: firebaseURL, // Real URL for streaming/download
-                            publicLink: publicLink,   // Simulated URL for user use
-                            uploadedAt: new Date().toISOString(),
-                        };
-
-                        await addDoc(getPrivateCollectionRef('tws-songs'), songData);
-                        
-                        // 5. Éxito Final
-                        window.alertUser('Success', `Song uploaded! Link: <span class="font-semibold text-white">${publicLink}</span>`, 'var(--color-secondary)');
-                        
-                        // Clean UI
-                        customNameInput.value = ''; 
-                        fileInput.value = ''; 
-                        selectedFileNameDisplay.textContent = "No file selected. Click to select a file.";
-                        fileSelectionFrame.classList.remove('border-blue-500');
-                        
-                        // Reset button
-                        uploadButton.disabled = false;
-                        uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-                        lucide.createIcons();
+            if (firebaseConfigRaw) {
+                try {
+                    const envConfig = JSON.parse(firebaseConfigRaw);
+                    if (envConfig && envConfig.apiKey) {
+                        return envConfig;
                     }
-                );
-            } catch (error) {
-                // General Upload Error
-                console.error("General Upload Error:", error);
-                window.alertUser("FATAL ERROR", error.message, 'var(--color-danger)', 8000);
-                uploadButton.disabled = false;
-                uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Error - Upload`;
-                lucide.createIcons();
-            }
-        };
-        // FIN DEL PARCHE
-
-        // ---------------------------------------------------------------------
-        // IV. LISTING AND SEARCH LOGIC (Lógica de Listado, Búsqueda y Paginación)
-        // ---------------------------------------------------------------------
-
-        const deleteSong = async (songId, storagePath, customName) => {
-            // Reemplazo de window.confirm por customConfirm
-            const confirmed = await customConfirm(
-                'Confirm Deletion', 
-                `Are you sure you want to delete the song: "${customName}"? This action cannot be undone.`, 
-                'Delete'
-            );
-
-            if (!confirmed) {
-                return;
-            }
-
-            try {
-                // 1. Delete from Firebase Storage
-                const storageRef = ref(storage, storagePath);
-                await deleteObject(storageRef);
-                
-                // 2. Delete document from Firestore
-                const songDocRef = doc(getPrivateCollectionRef('tws-songs'), songId);
-                await deleteDoc(songDocRef);
-
-                window.alertUser('Success', `Song "${customName}" deleted successfully.`, 'var(--color-secondary)');
-                
-                // Recargar la lista
-                setupSongsListener(currentPage);
-
-            } catch (error) {
-                console.error("Error deleting song:", error);
-                window.alertUser('Deletion Error', `Could not delete song. Check console. (${error.message})`, 'var(--color-danger)');
-            }
-        };
-
-        window.deleteSong = deleteSong; // Make deleteSong available globally
-
-        const renderSongs = (songs) => {
-            songList.innerHTML = ''; // Clear list
-            
-            if (songs.length === 0) {
-                songList.innerHTML = '<p class="text-gray-400">No music links found. Try uploading some files!</p>';
-                return;
-            }
-
-            const listHtml = songs.map(song => `
-                <div class="p-4 bg-gray-700 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between hover:bg-gray-600 transition duration-150">
-                    <div class="truncate w-full sm:w-2/3 mb-2 sm:mb-0">
-                        <span class="font-medium text-lg text-white block truncate">${song.customName}</span>
-                        <a href="${song.publicLink}" target="_blank" class="text-sm text-blue-400 hover:text-blue-300 truncate block">${song.publicLink}</a>
-                    </div>
-                    <div class="flex items-center space-x-3 text-sm mt-2 sm:mt-0">
-                        <span class="text-gray-400 hidden md:inline">${new Date(song.uploadedAt).toLocaleDateString()}</span>
-                        <button class="text-blue-400 hover:text-blue-300" onclick="copyToClipboard('${song.publicLink}')">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
-                        </button>
-                        <a href="${song.firebaseURL}" download class="text-green-400 hover:text-green-300">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                        </a>
-                        <!-- Delete button, calling the global function -->
-                        <button class="text-red-400 hover:text-red-300" onclick="window.deleteSong('${song.id}', '${song.storagePath}', '${song.customName.replace(/'/g, "\\'")}')">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            songList.innerHTML = listHtml;
-            lucide.createIcons();
-        };
-
-        const updatePaginationControls = (snapshotSize, hasMore) => {
-            // Update page info
-            pageInfo.textContent = `Page ${currentPage}`;
-
-            // Check if there's a previous page
-            prevPageBtn.disabled = currentPage === 1;
-
-            // Check if there's a next page (based on the snapshot size vs page limit)
-            nextPageBtn.disabled = !hasMore;
-            
-            lucide.createIcons();
-        };
-
-
-        /**
-         * Configura el listener de Firestore para la lista de canciones con filtros y paginación.
-         */
-        const setupSongsListener = async (page = 1) => {
-            if (songsUnsubscribe) songsUnsubscribe(); // Detener listener anterior
-            if (!db || !userId) return;
-
-            songList.innerHTML = '<p class="text-gray-400">Loading songs...</p>';
-
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const sortBy = sortFilter.value;
-            let orderField = 'uploadedAt';
-            let direction = 'desc';
-
-            if (sortBy === 'alpha') {
-                orderField = 'customName';
-                direction = 'asc';
-            } else if (sortBy === 'oldest') {
-                orderField = 'uploadedAt';
-                direction = 'asc';
-            }
-            
-            // Build the base query
-            let songsQuery = query(
-                getPrivateCollectionRef('tws-songs'),
-                orderBy(orderField, direction),
-                limit(SONGS_PER_PAGE + 1) // Fetch one extra document to check for 'next page'
-            );
-
-            // If navigating forward (page > currentPage)
-            if (page > currentPage && lastVisible) {
-                songsQuery = query(songsQuery, startAfter(lastVisible));
-            } 
-            
-            // Handle Search filtering (simple startsWith logic using index range)
-            if (searchTerm.length > 0) {
-                 // For search, we must order by the searched field for the range query to work.
-                 // Since we cannot rely on the index being created, we simplify to a client-side friendly query 
-                 // (only one filter/order) or rely on the range query if sorting is customName.
-                 
-                 // Since the app needs to function without custom indexes, we will fetch and filter client-side
-                 // for search terms, but only apply the range query for the first letter for Firestore efficiency.
-                 
-                 songsQuery = query(
-                    getPrivateCollectionRef('tws-songs'),
-                    where('customName', '>=', searchTerm),
-                    where('customName', '<=', searchTerm + '\uf8ff'),
-                    orderBy('customName', 'asc'), // Must order by customName
-                    limit(SONGS_PER_PAGE + 1)
-                );
-                // Note: Pagination tokens (lastVisible) would be complex here, so we reset to page 1 for search results.
-                if (page > 1) {
-                    page = 1; 
+                } catch (e) {
+                    console.error("Error parsing Firebase environment configuration:", e);
                 }
             }
-
-
-            // Use onSnapshot for real-time updates on the current page/filter
-            songsUnsubscribe = onSnapshot(songsQuery, (snapshot) => {
-                const songs = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                // Determine if there is a next page
-                const hasMore = songs.length > SONGS_PER_PAGE;
-                
-                // Slice the results to the page limit
-                const songsToShow = hasMore ? songs.slice(0, SONGS_PER_PAGE) : songs;
-
-                // Update pagination tokens only if we show results
-                if (songsToShow.length > 0) {
-                    lastVisible = snapshot.docs[songsToShow.length - 1]; // Token for next page
-                    firstVisible = snapshot.docs[0]; // Token for current page start
-                } else {
-                    lastVisible = null;
-                    firstVisible = null;
-                }
-                
-                // Update current page number and controls
-                currentPage = page;
-                updatePaginationControls(songsToShow.length, hasMore);
-
-                renderSongs(songsToShow);
-
-            }, (error) => {
-                console.error("Error fetching songs:", error);
-                songList.innerHTML = `<p class="text-red-400">Error loading music: ${error.message}</p>`;
-            });
-        };
-
-        // Escuchadores para la búsqueda y el filtro/paginación
-        searchInput.addEventListener('input', () => {
-            currentPage = 1;
-            lastVisible = null; // Reset pagination on search
-            setupSongsListener(1);
-        });
-
-        sortFilter.addEventListener('change', () => {
-            currentPage = 1;
-            lastVisible = null; // Reset pagination on sort change
-            setupSongsListener(1);
-        });
+            
+            return YOUR_FIREBASE_CONFIG;
+        }
         
-        // Paginación
-        prevPageBtn.addEventListener('click', () => {
-            // Given the complexity of backward pagination with Firestore cursors, 
-            // we will simply alert the user that it's not supported in this simple version.
-            window.alertUser("Navigation Locked", "Backward navigation is not supported with simple Firestore cursors. Please use sorting/searching.", 'var(--color-primary)');
-        });
-
-        nextPageBtn.addEventListener('click', () => {
-            if (!nextPageBtn.disabled) {
-                setupSongsListener(currentPage + 1);
-            }
-        });
-
-
-        // ---------------------------------------------------------------------
-        // V. CORE INITIALIZATION (Inicialización Central)
-        // ---------------------------------------------------------------------
-
-        /**
-         * Inicializa Firebase y la autenticación (solo se llama si el acceso es concedido).
-         */
-        const initApp = async () => {
-            try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                
-                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
-                    throw new Error("Missing or invalid Firebase configuration.");
-                }
-
-                // Inicializar servicios
+        // --- FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
+        function setupFirebase() {
+             try {
+                // Usa la configuración obtenida.
                 app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
                 auth = getAuth(app);
-                storage = getStorage(app);
-
-                // Autenticación con token o anónima
-                const authPromise = typeof __initial_auth_token !== 'undefined'
-                    ? signInWithCustomToken(auth, __initial_auth_token)
-                    : signInAnonymously(auth);
-                await authPromise;
-
-                // Configurar el listener de cambio de estado de autenticación
+                db = getFirestore(app);
+                
+                // Habilitar el botón de carga inicialmente como botón de subida
+                uploadButton.textContent = "Upload MP3";
+                uploadButton.classList.remove('btn-danger');
+                uploadButton.classList.add('btn-primary');
+                uploadButton.disabled = false;
+                
+                // Configurar el listener de autenticación
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        // Usamos el UID aquí para configurar rutas de Firestore
                         userId = user.uid;
-                        loginStatusMessage.classList.add('hidden'); 
-
-                        // Habilitar controles
-                        fileInput.disabled = false;
-                        uploadButton.disabled = false;
-                        uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
+                        loginStatusMessage.style.display = 'none';
+                        isAuthReady = true;
                         
-                        // Si la pestaña de lista está activa, cargar los datos
-                        if (!document.getElementById('tab-list').classList.contains('hidden')) {
-                            setupSongsListener(); 
-                        }
-                        lucide.createIcons();
+                        // Una vez autenticado, iniciar listeners de DB
+                        setupProfilesListener();
+                        setupSongsListener();
+                        // setupFoldersListener(); // Esta función debería estar implementada
 
                     } else {
                         userId = null;
-                        loginStatusMessage.textContent = "Authentication Failed. Please check console for details.";
-                        loginStatusMessage.className = 'text-center text-sm text-red-400 py-2 rounded-md font-medium';
-                        loginStatusMessage.classList.remove('hidden'); 
-                        uploadButton.disabled = true;
-                        uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Authentication Required`;
-                        lucide.createIcons();
+                        isAuthReady = false;
+                        // Intenta iniciar sesión anónimamente si no hay token
+                        signInAnonymously(auth).catch((error) => {
+                             // Si falla la autenticación, deshabilitar la subida y mostrar error
+                            uploadButton.textContent = "AUTH ERROR: Check Firebase Config/Rules";
+                            uploadButton.classList.remove('btn-primary');
+                            uploadButton.classList.add('btn-danger');
+                            uploadButton.disabled = true;
+                            loginStatusMessage.textContent = "Error during anonymous sign-in. Check logs.";
+                            loginStatusMessage.style.display = 'block';
+                            console.error("Authentication Error:", error);
+                        });
                     }
                 });
 
             } catch (error) {
-                console.error("Firebase Initialization/Authentication Error:", error);
-                loginStatusMessage.textContent = `FATAL DB ERROR: ${error.code || error.message}`;
-                loginStatusMessage.className = 'text-center text-sm text-red-400 py-2 rounded-md font-medium';
-                loginStatusMessage.classList.remove('hidden'); 
+                console.error("Firebase Initialization Failed:", error);
+                uploadButton.textContent = "DB Initialization Failed";
+                uploadButton.classList.remove('btn-primary');
+                uploadButton.classList.add('btn-danger');
                 uploadButton.disabled = true;
-                uploadButton.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> DB Error`;
-                lucide.createIcons();
+                loginStatusMessage.textContent = "Database initialization failed. Check console for details.";
+                loginStatusMessage.style.display = 'block';
             }
-        };
+        }
+        // --- FIN FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
 
-        // --- Event Listeners de la UI ---
-        
-        // 1. Alternativa de click en el marco para abrir el selector de archivo
-        fileSelectionFrame.addEventListener('click', () => {
-            if (!fileInput.disabled) {
-                fileInput.click();
+
+        // --- FUNCIONES DE UTILIDAD DE UI ---
+        function displayStatus(message, type = 'bg-blue-800', element = uploadStatus) {
+            element.textContent = message;
+            element.className = `p-3 rounded-lg text-sm mb-4 font-semibold ${type} text-white`;
+            element.classList.remove('hidden');
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 8000);
+        }
+
+        // Lógica para alternar las vistas sin superponerse (comportamiento de pestañas)
+        function showView(viewName) {
+            homeView.classList.add('hidden');
+            foldersView.classList.add('hidden');
+            folderDetailView.classList.add('hidden');
+            foldersMainContent.classList.remove('hidden');
+
+            if (viewName === 'home') {
+                homeView.classList.remove('hidden');
+                currentFolderId = null;
+            } else if (viewName === 'folders') {
+                foldersView.classList.remove('hidden');
+                currentFolderId = null;
+            } else if (viewName.startsWith('folderDetail-')) {
+                const folderId = viewName.split('-')[1];
+                currentFolderId = folderId;
+                foldersView.classList.remove('hidden');
+                foldersMainContent.classList.add('hidden');
+                folderDetailView.classList.remove('hidden');
+                renderFolderDetail(folderId); // Esta función debería estar implementada
             }
-        });
 
-        // 2. Actualizar el botón y el marco al seleccionar un archivo
-        fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
-            const customName = customNameInput.value.trim();
+            // Manejar clase activa del navbar
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            const navKey = viewName.startsWith('folderDetail') ? 'folders' : viewName;
+            document.getElementById(`nav-${navKey}`).classList.add('active');
 
-            if (file) {
-                selectedFileNameDisplay.innerHTML = `Selected File: <span class="font-semibold text-white">${file.name}</span>`;
-                fileSelectionFrame.classList.add('border-blue-500');
+            currentView = viewName;
+        }
 
-                if (customName.length > 0) {
-                    uploadButton.disabled = false;
-                    uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-                } else {
-                    uploadButton.disabled = true;
-                    uploadButton.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i> Enter Name & Upload`;
+        // --- LÓGICA DE NICKNAME ---
+
+        async function saveNickname(nickname) {
+            const statusElement = document.getElementById('nickname-status');
+            statusElement.classList.add('hidden');
+
+            if (!db || !userId) {
+                displayStatus('Error: DB o Usuario no disponible.', 'bg-red-600', statusElement);
+                return;
+            }
+
+            try {
+                const profileRef = doc(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`, userId);
+                await setDoc(profileRef, { nickname: nickname.trim(), lastUpdate: new Date() }, { merge: true });
+                displayStatus(`Nickname guardado: ${nickname}`, 'bg-green-600', statusElement);
+                userProfiles[userId] = nickname.trim();
+                filterAndSortSongs();
+            } catch (error) {
+                // Si falla por permisos, debe ser visible al usuario
+                console.error("Error saving nickname:", error);
+                displayStatus('Error al guardar el nickname. Revisa los permisos de Firestore.', 'bg-red-600', statusElement);
+            }
+        }
+
+        function setupProfilesListener() {
+            if (!db || !userId) return;
+            const collectionPath = `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`;
+            const q = query(collection(db, collectionPath));
+
+            onSnapshot(q, (snapshot) => {
+                userProfiles = {};
+                snapshot.forEach((doc) => {
+                    userProfiles[doc.id] = doc.data().nickname || `User-${doc.id.substring(0, 5)}`;
+                });
+                
+                if (currentView === 'home') {
+                    filterAndSortSongs();
                 }
-
-            } else {
-                selectedFileNameDisplay.textContent = "No file selected. Click to select a file.";
-                fileSelectionFrame.classList.remove('border-blue-500');
-                uploadButton.disabled = false;
-                uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-            }
-            lucide.createIcons();
-        });
-
-        // 3. Listener del campo de nombre personalizado 
-        customNameInput.addEventListener('input', () => {
-            const fileSelected = fileInput.files.length > 0;
-            const customName = customNameInput.value.trim();
-
-            if (fileSelected && customName.length > 0) {
-                uploadButton.disabled = false;
-                uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-            } else {
-                if (fileSelected) {
-                    uploadButton.disabled = true;
-                    uploadButton.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i> Enter Name & Upload`;
-                } else {
-                    // Si no hay archivo, el botón debería funcionar como selector (click en fileInput)
-                    uploadButton.disabled = false; 
-                    uploadButton.innerHTML = `<i data-lucide="upload" class="w-5 h-5 mr-2"></i> Upload`;
-                }
-            }
-            lucide.createIcons();
-        });
-
-        // 4. Controlador del botón único (Seleccionar o Subir)
-        uploadButton.addEventListener('click', () => {
-            const file = fileInput.files[0];
-            const customName = customNameInput.value;
-
-            if (!file) {
-                fileInput.click();
-            } else if (file && customName) {
-                uploadSong(file, customName);
-            } else {
-                window.alertUser('Input Error', 'Please enter a custom name before uploading.', 'var(--color-danger)');
-            }
-        });
+            }, (error) => {
+                // Si falla por permisos, mostrar error en consola
+                console.error("Error fetching profiles (Permissions?):", error);
+            });
+        }
         
-        // Manejar el intento de acceso
-        accessButton.addEventListener('click', handleAccessAttempt);
-        accessPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleAccessAttempt();
+        // --- LÓGICA DE SUBIDA DE ARCHIVOS ---
+        async function uploadFileAndSaveMetadata(file, customName) {
+            if (!db || !userId) {
+                displayStatus("Error: No autenticado o DB no inicializada.", 'bg-red-600');
+                return;
             }
-        });
 
-
-        // Función para copiar al portapapeles (accesible globalmente)
-        window.copyToClipboard = (text) => {
-            const tempInput = document.createElement('textarea');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            window.alertUser('Copied', 'Link copied to clipboard!', 'var(--color-secondary)');
-        };
-
-        // --- INICIO DE LA APLICACIÓN ---
-        window.onload = () => {
-            lucide.createIcons(); // Renderizar iconos iniciales
+            const { cloudName, uploadPreset, folder } = CLOUDINARY_CONFIG;
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
             
-            if (checkAccess()) {
-                grantAccess();
-            } else {
-                accessGate.classList.remove('hidden');
+            const songName = customName || file.name.split('.').slice(0, -1).join('.');
+            // CORRECCIÓN: Usamos createSafePublicId para mantener la capitalización.
+            const safePublicId = createSafePublicId(songName);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', uploadPreset);
+            formData.append('folder', folder);
+            
+            // CRÍTICO: Usar el nombre seguro y con case para el public_id si se proporcionó un nombre personalizado.
+            if (customName) {
+                formData.append('public_id', safePublicId);
             }
-        };
+            
+            uploadButton.textContent = "Uploading...";
+            uploadButton.disabled = true;
+
+            try {
+                // 1. Subir a Cloudinary
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Cloudinary Upload Failed: ${errorData.error ? errorData.error.message : response.statusText}.`);
+                }
+
+                const data = await response.json();
+                
+                // 2. Guardar metadatos en Firestore
+                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
+                
+                const songData = {
+                    name: songName,            // Nombre que se muestra en la lista
+                    fileName: file.name,
+                    url: data.secure_url,      // URL real de Cloudinary
+                    uploadedBy: userId,
+                    timestamp: new Date(),
+                    cloudinaryId: data.public_id, // ID público exacto en Cloudinary
+                    shortName: safePublicId        // Nombre corto para /music/Space
+                };
+
+
+                await addDoc(collection(db, collectionPath), songData);
+                
+                displayStatus(`¡"${songName}" subida y registrada con éxito! Enlace URL limpio generado.`, 'bg-green-600');
+
+            } catch (error) {
+                console.error("Upload Error:", error);
+                displayStatus(`Error durante la subida o registro: ${error.message || error}`, 'bg-red-600');
+            } finally {
+                uploadButton.textContent = "Upload MP3";
+                uploadButton.disabled = false;
+            }
+        }
+
+        // Función auxiliar para eliminar una canción (Debe ser implementada)
+        async function deleteSong(songId, cloudinaryId) {
+            if (!confirm('Are you sure you want to delete this song? This action is permanent.')) return;
+            
+            // 1. (Opcional) Eliminar de Cloudinary. Esto requiere una firma, que no está implementada aquí.
+            // Por simplicidad en el frontend, solo eliminamos el registro de la DB.
+            console.warn(`Deleting song ID: ${songId}. Note: Cloudinary file must be deleted separately (requires server-side signature).`);
+            
+            // 2. Eliminar de Firestore
+            try {
+                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
+                await deleteDoc(doc(db, collectionPath, songId));
+                displayStatus(`Song deleted successfully (ID: ${songId})`, 'bg-red-600');
+            } catch (error) {
+                console.error("Error deleting song:", error);
+                displayStatus(`Error deleting song: ${error.message}`, 'bg-red-600');
+            }
+        }
+
+        // --- LÓGICA DE FIREBASE PARA CANCIONES (Catálogo principal) ---
+        
+        function setupSongsListener() {
+            if (!db || !userId) return;
+
+            loadingSpinner.classList.remove('hidden');
+            musicList.innerHTML = '';
+            
+            const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
+            // Usar 'orderBy' para asegurar un orden inicial (por timestamp descendente por defecto)
+            const q = query(collection(db, collectionPath), orderBy("timestamp", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                loadingSpinner.classList.add('hidden');
+                allSongs = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allSongs.push({
+                        id: doc.id,
+                        ...data,
+                        // Corregido: Uso de toDate() para convertir el Timestamp de Firestore a objeto Date de JS
+                        timestamp: data.timestamp && data.timestamp.toDate ? data.timestamp.toDate() : new Date(0) 
+                    });
+                });
+                filterAndSortSongs();
+            }, (error) => {
+                console.error("Error fetching songs (Permissions?):", error);
+                loadingSpinner.classList.add('hidden');
+                displayStatus('Error cargando la lista. Revisa las Reglas de Seguridad de Firestore.', 'bg-yellow-600');
+            });
+        }
+
+        function filterAndSortSongs() {
+            let tempSongs = [...allSongs];
+            const searchTerm = searchInput.value.toLowerCase();
+            const sortOrder = document.querySelector('input[name="sort"]:checked').value;
+
+            // 1. Filtrado
+            if (searchTerm) {
+                tempSongs = tempSongs.filter(song =>
+                    song.name.toLowerCase().includes(searchTerm) ||
+                    song.fileName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // 2. Ordenación
+            if (sortOrder === 'alpha') {
+                tempSongs.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortOrder === 'newest') {
+                tempSongs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Usar getTime() para comparar fechas
+            } else if (sortOrder === 'oldest') {
+                tempSongs.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()); // Usar getTime() para comparar fechas
+            }
+
+            renderMusicList(tempSongs);
+        }
+        
+        function renderMusicList(songs) {
+            musicList.innerHTML = '';
+            songCountElement.textContent = songs.length;
+            
+            if (songs.length === 0) {
+                noSongsMessage.classList.remove('hidden');
+            } else {
+                noSongsMessage.classList.add('hidden');
+                songs.forEach(song => {
+                    const songElement = createSongElement(song);
+                    musicList.appendChild(songElement);
+                });
+            }
+            // Importante: Volver a inicializar Lucide después de insertar elementos dinámicos
+            lucide.createIcons();
+            
+            // Configurar listeners de los botones (debido a la inserción dinámica)
+            musicList.querySelectorAll('.delete-song-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const cloudinaryId = e.currentTarget.dataset.cloudinaryId;
+                    deleteSong(id, cloudinaryId);
+                });
+            });
+
+            musicList.querySelectorAll('.copy-url-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    copyUrl(e.currentTarget.dataset.url);
+                });
+            });
+            
+            // Los listeners de 'add-to-folder-btn' y otras funciones de carpeta deben implementarse
+        }
+
+        function createSongElement(song) {
+            const div = document.createElement('div');
+            div.className = 'song-item p-3 flex flex-col md:flex-row justify-between items-center';
+            div.id = `song-${song.id}`;
+
+            const name = song.name || song.fileName;
+            const externalLink = song.url;
+            const uploaderName = userProfiles[song.uploadedBy] || `User-${song.uploadedBy.substring(0, 8)}...`;
+
+            // CORRECCIÓN CRÍTICA: Se completó la sintaxis del template string (línea 749 en el original)
+            div.innerHTML = `
+                <div class="flex-grow w-full md:w-auto mb-3 md:mb-0">
+                    <p class="font-semibold text-lg text-gray-100">${name}</p>
+                    <p class="text-xs text-gray-400">URL ID: ${song.cloudinaryId || 'N/A'}</p>
+                    <p class="text-xs text-gray-400">Uploaded by: ${uploaderName}</p>
+                    <p class="text-xs text-gray-400">Date: ${song.timestamp.toLocaleDateString()}</p>
+                    <audio controls class="mt-2 w-full">
+                        <source src="${externalLink}" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="flex flex-shrink-0 space-x-2 mt-2 md:mt-0">
+                    <button class="add-to-folder-btn py-2 px-4 rounded-lg text-white font-semibold btn-secondary transition" data-id="${song.id}" data-name="${name}">
+                        Add to Folder
+                    </button>
+                    <button class="copy-url-btn py-2 px-4 rounded-lg text-white font-semibold bg-gray-500 hover:bg-gray-600 transition" data-url="${externalLink}">
+                        <i data-lucide="copy" class="w-4 h-4 inline mr-1"></i> Copy URL
+                    </button>
+                    ${song.uploadedBy === userId ? `
+                        <button class="delete-song-btn py-2 px-4 rounded-lg text-white font-semibold btn-danger transition" data-id="${song.id}" data-cloudinary-id="${song.cloudinaryId}">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i> Delete
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            // NO ES NECESARIO LLAMAR A lucide.createIcons() AQUÍ, SINO EN renderMusicList UNA VEZ.
+            return div;
+        }
+
+        // --- SETUP DE EVENT LISTENERS INICIALES ---
+        function setupInitialEventListeners() {
+            // Navegación
+            document.getElementById('nav-home').addEventListener('click', () => showView('home'));
+            document.getElementById('nav-folders').addEventListener('click', () => showView('folders'));
+            document.getElementById('back-to-folders-btn').addEventListener('click', () => showView('folders'));
+
+            // Nickname
+            document.getElementById('save-nickname-btn').addEventListener('click', () => {
+                const nicknameInput = document.getElementById('nickname-input');
+                const nickname = nicknameInput.value.trim();
+                if (nickname) {
+                    saveNickname(nickname);
+                } else {
+                    displayStatus('Nickname cannot be empty.', 'bg-yellow-600', document.getElementById('nickname-status'));
+                }
+            });
+
+            // Búsqueda y Ordenamiento
+            searchInput.addEventListener('input', filterAndSortSongs);
+            sortRadios.forEach(radio => radio.addEventListener('change', filterAndSortSongs));
+
+            // Formulario de Carga
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const file = mp3File.files[0];
+                const name = customNameInput.value.trim();
+
+                if (!file) {
+                    displayStatus("Please select a file.", 'bg-yellow-600');
+                    return;
+                }
+                
+                // Validación de tamaño (40MB)
+                const MAX_SIZE = 40 * 1024 * 1024;
+                if (file.size > MAX_SIZE) {
+                    displayStatus("File is too large (max 40MB).", 'bg-red-600');
+                    return;
+                }
+
+                await uploadFileAndSaveMetadata(file, name);
+            });
+        }
+        
+        // --- INICIALIZACIÓN ---
+        setupInitialEventListeners();
+        setupFirebase();
+        // ---
     </script>
 </body>
 </html>
