@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWS Music Host Site - Upload & Share</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script> 
     <style>
         /* Paleta de colores Oscura */
         :root {
@@ -19,22 +19,22 @@
             --color-danger: #ef4444; /* Rojo para errores/eliminar */
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--color-bg-light);
-            color: var(--color-text);
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--color-bg-light); 
+            color: var(--color-text); 
         }
         .container { max-width: 90%; margin: 0 auto; padding: 20px; }
-        .card {
-            background-color: var(--color-bg-card);
+        .card { 
+            background-color: var(--color-bg-card); 
             border: 1px solid #4b5563; /* Borde sutil */
-            border-radius: 12px;
+            border-radius: 12px; 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
         }
-        .input-style {
-            background-color: var(--color-input-bg);
-            border: 1px solid #6b7280;
+        .input-style { 
+            background-color: var(--color-input-bg); 
+            border: 1px solid #6b7280; 
             color: var(--color-text);
             border-radius: 8px;
         }
@@ -70,14 +70,19 @@
 <body class="min-h-screen p-4">
 
     <header class="flex justify-between items-center py-4 border-b border-gray-600 mb-6">
-        <h1 class="text-3xl font-extrabold text-gray-100">TWS Music Host Site</h1>
+        <h1 class="text-3xl font-extrabold text-gray-100">
+            <span class="text-blue-500">T</span>
+            <span class="text-yellow-500">W</span>
+            <span class="text-red-500">S</span>
+            Music Host Site
+        </h1>
         <nav class="flex items-center space-x-2">
             <div class="flex space-x-2">
                 <span id="nav-home" class="nav-link active font-medium" data-view="home">Home & Upload</span>
                 <span id="nav-folders" class="nav-link font-medium" data-view="folders">Folders</span>
             </div>
             <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-700 transition" onclick="showModal('settingsModal')">
-                <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
+                 <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
             </button>
         </nav>
     </header>
@@ -128,8 +133,8 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
                     <input type="text" id="search-input" placeholder="Search song by name..." class="input-style p-3 rounded-lg w-full sm:w-2/3">
                     <div class="flex space-x-2 text-sm text-gray-300 font-medium">
-                        <label><input type="radio" name="sort" value="alpha" class="text-blue-400"> Alphabetical</label>
-                        <label><input type="radio" name="sort" value="newest" checked class="text-blue-400"> Newest</label>
+                        <label><input type="radio" name="sort" value="alpha" checked class="text-blue-400"> Alphabetical</label>
+                        <label><input type="radio" name="sort" value="newest" class="text-blue-400"> Newest</label>
                         <label><input type="radio" name="sort" value="oldest" class="text-blue-400"> Oldest</label>
                     </div>
                 </div>
@@ -247,24 +252,13 @@
         function hideModal(id) {
             document.getElementById(id)?.classList.add('hidden');
         }
-        
-        // Función para copiar URL - Necesaria para el botón que hemos completado
-        function copyUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                // Pequeño feedback visual o console log
-                console.log('URL copied:', url);
-            }).catch(err => {
-                console.error('Could not copy URL: ', err);
-            });
-        }
     </script>
 
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Añadida importación de 'orderBy' que es una función de uso común en las queries de Firestore.
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc, updateDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Inicializar iconos de Lucide
@@ -276,16 +270,14 @@
             return text
                 .trim()
                 // Eliminar caracteres problemáticos de Cloudinary/filesystem, pero mantener A-Z y a-z
-                .replace(/[\\/:*?"<>|&#]/g, '')
+                .replace(/[\\/:*?"<>|&#]/g, '') 
                 // Reemplazar espacios, guiones y puntos con guión bajo (underscore)
-                .replace(/[\s\-\.]+/g, '_');
+                .replace(/[\s\-\.]+/g, '_');    
         }
         // --- FIN FUNCIONES DE UTILIDAD ---
 
         // Configuración Global y Variables
-        // Usamos el Project ID como fallback si no está definido en el entorno
-        const firebaseConfig = getFirebaseConfig();
-        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
@@ -298,7 +290,7 @@
         const CLOUDINARY_CONFIG = {
             cloudName: "daj3jaqd9",
             uploadPreset: "tws_music_uploads",
-            folder: "music"
+            folder: "music" 
         };
         // --- FIN CONFIGURACIÓN CLOUDINARY ---
 
@@ -311,8 +303,6 @@
         const uploadButton = document.getElementById('uploadButton');
         const uploadStatus = document.getElementById('upload-status');
         const uploadForm = document.getElementById('uploadForm');
-        const mp3File = document.getElementById('mp3File'); // Añadida referencia para el evento
-        const customNameInput = document.getElementById('customName'); // Añadida referencia para el evento
         const musicList = document.getElementById('music-list');
         const songCountElement = document.getElementById('song-count');
         const loginStatusMessage = document.getElementById('login-status-message');
@@ -325,17 +315,17 @@
         const saveOrderBtn = document.getElementById('save-order-btn');
         const folderDetailView = document.getElementById('folder-detail-view');
         const foldersMainContent = document.getElementById('folders-main-content');
-        const homeView = document.getElementById('home-view');
-        const foldersView = document.getElementById('folders-view');
-        const backToFoldersBtn = document.getElementById('back-to-folders-btn');
+        const homeView = document.getElementById('home-view'); 
+        const foldersView = document.getElementById('folders-view'); 
+        const backToFoldersBtn = document.getElementById('back-to-folders-btn'); 
         
         // Estado de la interfaz
         let allSongs = [];
         let userProfiles = {}; // Cache para nicknames
         let allFolders = [];
         let currentView = 'home';
-        let currentFolderId = null;
-        let songToAddMetadata = null;
+        let currentFolderId = null; 
+        let songToAddMetadata = null; 
 
         // Función para obtener la configuración (DATOS INSERTADOS AQUÍ)
         function getFirebaseConfig() {
@@ -364,62 +354,6 @@
             
             return YOUR_FIREBASE_CONFIG;
         }
-        
-        // --- FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
-        function setupFirebase() {
-             try {
-                // Usa la configuración obtenida.
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                // Habilitar el botón de carga inicialmente como botón de subida
-                uploadButton.textContent = "Upload MP3";
-                uploadButton.classList.remove('btn-danger');
-                uploadButton.classList.add('btn-primary');
-                uploadButton.disabled = false;
-                
-                // Configurar el listener de autenticación
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        loginStatusMessage.style.display = 'none';
-                        isAuthReady = true;
-                        
-                        // Una vez autenticado, iniciar listeners de DB
-                        setupProfilesListener();
-                        setupSongsListener();
-                        // setupFoldersListener(); // Esta función debería estar implementada
-
-                    } else {
-                        userId = null;
-                        isAuthReady = false;
-                        // Intenta iniciar sesión anónimamente si no hay token
-                        signInAnonymously(auth).catch((error) => {
-                             // Si falla la autenticación, deshabilitar la subida y mostrar error
-                            uploadButton.textContent = "AUTH ERROR: Check Firebase Config/Rules";
-                            uploadButton.classList.remove('btn-primary');
-                            uploadButton.classList.add('btn-danger');
-                            uploadButton.disabled = true;
-                            loginStatusMessage.textContent = "Error during anonymous sign-in. Check logs.";
-                            loginStatusMessage.style.display = 'block';
-                            console.error("Authentication Error:", error);
-                        });
-                    }
-                });
-
-            } catch (error) {
-                console.error("Firebase Initialization Failed:", error);
-                uploadButton.textContent = "DB Initialization Failed";
-                uploadButton.classList.remove('btn-primary');
-                uploadButton.classList.add('btn-danger');
-                uploadButton.disabled = true;
-                loginStatusMessage.textContent = "Database initialization failed. Check console for details.";
-                loginStatusMessage.style.display = 'block';
-            }
-        }
-        // --- FIN FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
-
 
         // --- FUNCIONES DE UTILIDAD DE UI ---
         function displayStatus(message, type = 'bg-blue-800', element = uploadStatus) {
@@ -436,7 +370,7 @@
             homeView.classList.add('hidden');
             foldersView.classList.add('hidden');
             folderDetailView.classList.add('hidden');
-            foldersMainContent.classList.remove('hidden');
+            foldersMainContent.classList.remove('hidden'); 
 
             if (viewName === 'home') {
                 homeView.classList.remove('hidden');
@@ -447,10 +381,10 @@
             } else if (viewName.startsWith('folderDetail-')) {
                 const folderId = viewName.split('-')[1];
                 currentFolderId = folderId;
-                foldersView.classList.remove('hidden');
-                foldersMainContent.classList.add('hidden');
-                folderDetailView.classList.remove('hidden');
-                renderFolderDetail(folderId); // Esta función debería estar implementada
+                foldersView.classList.remove('hidden'); 
+                foldersMainContent.classList.add('hidden'); 
+                folderDetailView.classList.remove('hidden'); 
+                renderFolderDetail(folderId);
             }
 
             // Manejar clase activa del navbar
@@ -470,8 +404,8 @@
             statusElement.classList.add('hidden');
 
             if (!db || !userId) {
-                displayStatus('Error: DB o Usuario no disponible.', 'bg-red-600', statusElement);
-                return;
+                 displayStatus('Error: DB o Usuario no disponible.', 'bg-red-600', statusElement);
+                 return;
             }
 
             try {
@@ -519,7 +453,7 @@
             
             const songName = customName || file.name.split('.').slice(0, -1).join('.');
             // CORRECCIÓN: Usamos createSafePublicId para mantener la capitalización.
-            const safePublicId = createSafePublicId(songName);
+            const safePublicId = createSafePublicId(songName); 
 
             const formData = new FormData();
             formData.append('file', file);
@@ -531,7 +465,7 @@
                 formData.append('public_id', safePublicId);
             }
             
-            uploadButton.textContent = "Uploading...";
+            uploadButton.textContent = "Uploading..."; 
             uploadButton.disabled = true;
 
             try {
@@ -552,14 +486,14 @@
                 const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
                 
                 const songData = {
-                    name: songName,            // Nombre que se muestra en la lista
-                    fileName: file.name,
-                    url: data.secure_url,      // URL real de Cloudinary
-                    uploadedBy: userId,
-                    timestamp: new Date(),
-                    cloudinaryId: data.public_id, // ID público exacto en Cloudinary
-                    shortName: safePublicId        // Nombre corto para /music/Space
-                };
+    name: songName,            // Nombre que se muestra en la lista
+    fileName: file.name,
+    url: data.secure_url,      // URL real de Cloudinary
+    uploadedBy: userId,
+    timestamp: new Date(),
+    cloudinaryId: data.public_id, // ID público exacto en Cloudinary
+    shortName: safePublicId       // Nombre corto para /music/Space
+};
 
 
                 await addDoc(collection(db, collectionPath), songData);
@@ -570,27 +504,8 @@
                 console.error("Upload Error:", error);
                 displayStatus(`Error durante la subida o registro: ${error.message || error}`, 'bg-red-600');
             } finally {
-                uploadButton.textContent = "Upload MP3";
+                uploadButton.textContent = "Upload";
                 uploadButton.disabled = false;
-            }
-        }
-
-        // Función auxiliar para eliminar una canción (Debe ser implementada)
-        async function deleteSong(songId, cloudinaryId) {
-            if (!confirm('Are you sure you want to delete this song? This action is permanent.')) return;
-            
-            // 1. (Opcional) Eliminar de Cloudinary. Esto requiere una firma, que no está implementada aquí.
-            // Por simplicidad en el frontend, solo eliminamos el registro de la DB.
-            console.warn(`Deleting song ID: ${songId}. Note: Cloudinary file must be deleted separately (requires server-side signature).`);
-            
-            // 2. Eliminar de Firestore
-            try {
-                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
-                await deleteDoc(doc(db, collectionPath, songId));
-                displayStatus(`Song deleted successfully (ID: ${songId})`, 'bg-red-600');
-            } catch (error) {
-                console.error("Error deleting song:", error);
-                displayStatus(`Error deleting song: ${error.message}`, 'bg-red-600');
             }
         }
 
@@ -603,8 +518,7 @@
             musicList.innerHTML = '';
             
             const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
-            // Usar 'orderBy' para asegurar un orden inicial (por timestamp descendente por defecto)
-            const q = query(collection(db, collectionPath), orderBy("timestamp", "desc"));
+            const q = query(collection(db, collectionPath));
 
             onSnapshot(q, (snapshot) => {
                 loadingSpinner.classList.add('hidden');
@@ -614,8 +528,7 @@
                     allSongs.push({
                         id: doc.id,
                         ...data,
-                        // Corregido: Uso de toDate() para convertir el Timestamp de Firestore a objeto Date de JS
-                        timestamp: data.timestamp && data.timestamp.toDate ? data.timestamp.toDate() : new Date(0) 
+                        timestamp: data.timestamp ? data.timestamp.toDate() : new Date(0)
                     });
                 });
                 filterAndSortSongs();
@@ -633,8 +546,8 @@
 
             // 1. Filtrado
             if (searchTerm) {
-                tempSongs = tempSongs.filter(song =>
-                    song.name.toLowerCase().includes(searchTerm) ||
+                tempSongs = tempSongs.filter(song => 
+                    song.name.toLowerCase().includes(searchTerm) || 
                     song.fileName.toLowerCase().includes(searchTerm)
                 );
             }
@@ -643,9 +556,9 @@
             if (sortOrder === 'alpha') {
                 tempSongs.sort((a, b) => a.name.localeCompare(b.name));
             } else if (sortOrder === 'newest') {
-                tempSongs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Usar getTime() para comparar fechas
+                tempSongs.sort((a, b) => b.timestamp - a.timestamp);
             } else if (sortOrder === 'oldest') {
-                tempSongs.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()); // Usar getTime() para comparar fechas
+                tempSongs.sort((a, b) => a.timestamp - b.timestamp);
             }
 
             renderMusicList(tempSongs);
@@ -664,25 +577,6 @@
                     musicList.appendChild(songElement);
                 });
             }
-            // Importante: Volver a inicializar Lucide después de insertar elementos dinámicos
-            lucide.createIcons();
-            
-            // Configurar listeners de los botones (debido a la inserción dinámica)
-            musicList.querySelectorAll('.delete-song-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const id = e.currentTarget.dataset.id;
-                    const cloudinaryId = e.currentTarget.dataset.cloudinaryId;
-                    deleteSong(id, cloudinaryId);
-                });
-            });
-
-            musicList.querySelectorAll('.copy-url-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    copyUrl(e.currentTarget.dataset.url);
-                });
-            });
-            
-            // Los listeners de 'add-to-folder-btn' y otras funciones de carpeta deben implementarse
         }
 
         function createSongElement(song) {
@@ -691,10 +585,10 @@
             div.id = `song-${song.id}`;
 
             const name = song.name || song.fileName;
-            const externalLink = song.url;
+            const externalLink = song.url; 
             const uploaderName = userProfiles[song.uploadedBy] || `User-${song.uploadedBy.substring(0, 8)}...`;
 
-            // CORRECCIÓN CRÍTICA: Se completó la sintaxis del template string (línea 749 en el original)
+
             div.innerHTML = `
                 <div class="flex-grow w-full md:w-auto mb-3 md:mb-0">
                     <p class="font-semibold text-lg text-gray-100">${name}</p>
@@ -710,69 +604,561 @@
                     <button class="add-to-folder-btn py-2 px-4 rounded-lg text-white font-semibold btn-secondary transition" data-id="${song.id}" data-name="${name}">
                         Add to Folder
                     </button>
-                    <button class="copy-url-btn py-2 px-4 rounded-lg text-white font-semibold bg-gray-500 hover:bg-gray-600 transition" data-url="${externalLink}">
-                        <i data-lucide="copy" class="w-4 h-4 inline mr-1"></i> Copy URL
+                    <button class="copy-btn py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" data-url="${externalLink}">
+                        Copy Link
                     </button>
-                    ${song.uploadedBy === userId ? `
-                        <button class="delete-song-btn py-2 px-4 rounded-lg text-white font-semibold btn-danger transition" data-id="${song.id}" data-cloudinary-id="${song.cloudinaryId}">
-                            <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i> Delete
-                        </button>
-                    ` : ''}
+                    ${song.uploadedBy === userId ? 
+                        `<button class="delete-btn py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" data-id="${song.id}" data-cloudinary-id="${song.cloudinaryId}">
+                            Delete
+                        </button>` 
+                        : ''}
                 </div>
             `;
+
+            div.querySelector('.copy-btn').addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                copyToClipboard(url);
+            });
             
-            // NO ES NECESARIO LLAMAR A lucide.createIcons() AQUÍ, SINO EN renderMusicList UNA VEZ.
+            div.querySelector('.add-to-folder-btn').addEventListener('click', (e) => {
+                songToAddMetadata = {
+                    id: e.currentTarget.getAttribute('data-id'),
+                    name: e.currentTarget.getAttribute('data-name')
+                };
+                openAddSongModal();
+            });
+
+            const deleteBtn = div.querySelector('.delete-btn');
+            if (deleteBtn) {
+                 deleteBtn.addEventListener('click', (e) => {
+                    const songId = e.currentTarget.getAttribute('data-id');
+                    const cloudinaryId = e.currentTarget.getAttribute('data-cloudinary-id');
+                    
+                    // Nota: Aquí se usa confirm() temporalmente para evitar modales complejos en HTML
+                    if (confirm("¿Estás seguro de que quieres eliminar esta canción? (Solo elimina el registro de la DB)")) {
+                        deleteSong(songId, cloudinaryId);
+                    }
+                });
+            }
+
+            return div;
+        }
+        
+        async function deleteSong(songId, cloudinaryId) {
+            if (!db || !userId) {
+                displayStatus("Error: No autenticado.", 'bg-red-600');
+                return;
+            }
+            
+            try {
+                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
+                const docRef = doc(db, collectionPath, songId);
+                await deleteDoc(docRef);
+                displayStatus("Canción eliminada del registro.", 'bg-yellow-600');
+            } catch (error) {
+                console.error("Error deleting song from Firestore:", error);
+                displayStatus(`Error eliminando la canción: ${error.message}`, 'bg-red-600');
+            }
+        }
+        
+        // --- LÓGICA DEL MODAL AÑADIR CANCIÓN A CARPETA ---
+
+        function openAddSongModal() {
+            const songNameElement = document.getElementById('song-to-add-name');
+            const folderSelect = document.getElementById('folder-select');
+            const confirmBtn = document.getElementById('confirm-add-song-btn');
+
+            songNameElement.textContent = songToAddMetadata.name;
+            folderSelect.innerHTML = '<option value="" disabled selected>-- Select a folder --</option>';
+            confirmBtn.disabled = true;
+
+            allFolders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = `${folder.name} (${folder.ownerNickname})`;
+                folderSelect.appendChild(option);
+            });
+
+            folderSelect.onchange = () => {
+                confirmBtn.disabled = !folderSelect.value;
+            };
+
+            showModal('addSongModal');
+        }
+        
+        document.getElementById('confirm-add-song-btn').addEventListener('click', async () => {
+            if (!songToAddMetadata || !db || !userId) return;
+
+            const folderId = document.getElementById('folder-select').value;
+            if (!folderId) return;
+            
+            const statusElement = document.getElementById('add-song-status');
+            statusElement.classList.add('hidden');
+
+            const folder = allFolders.find(f => f.id === folderId);
+            if (!folder) {
+                displayStatus('Carpeta no encontrada.', 'bg-red-600', statusElement);
+                return;
+            }
+
+            const existingSong = allSongs.find(s => s.id === songToAddMetadata.id);
+
+            const songRef = {
+                songId: songToAddMetadata.id,
+                songName: songToAddMetadata.name,
+                url: existingSong?.url,
+                order: folder.songReferences.length + 1,
+            };
+            
+            const exists = folder.songReferences.some(ref => ref.songId === songRef.songId);
+            if (exists) {
+                displayStatus('La canción ya está en esta carpeta.', 'bg-yellow-600', statusElement);
+                return;
+            }
+
+            try {
+                const folderRef = doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, folderId);
+                
+                const newSongReferences = [...folder.songReferences, songRef];
+                
+                await updateDoc(folderRef, {
+                    songReferences: newSongReferences
+                });
+                
+                displayStatus(`Canción añadida a "${folder.name}" con éxito!`, 'bg-green-600', statusElement);
+                hideModal('addSongModal');
+                songToAddMetadata = null;
+
+            } catch (error) {
+                console.error("Error adding song to folder:", error);
+                displayStatus(`Error al añadir la canción: ${error.message}`, 'bg-red-600', statusElement);
+            }
+        });
+
+        // --- LÓGICA DE CARPETAS ---
+
+        // Listener para el botón de confirmación de creación de carpeta
+        document.getElementById('create-folder-btn').addEventListener('click', createFolder);
+
+        async function createFolder() {
+            if (!db || !userId) return;
+
+            const nameInput = document.getElementById('folder-name-input');
+            const statusElement = document.getElementById('folder-creation-status');
+            const folderName = nameInput.value.trim();
+
+            if (!folderName) {
+                displayStatus('El nombre de la carpeta no puede estar vacío.', 'bg-red-600', statusElement);
+                return;
+            }
+
+            statusElement.classList.add('hidden');
+            const createButton = document.getElementById('create-folder-btn');
+            createButton.textContent = 'Creating...';
+            createButton.disabled = true;
+
+            try {
+                const folderData = {
+                    name: folderName,
+                    ownerId: userId,
+                    ownerNickname: userProfiles[userId] || `User-${userId.substring(0, 8)}...`,
+                    songReferences: [], 
+                    createdAt: new Date()
+                };
+
+                const collectionPath = `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`;
+                await addDoc(collection(db, collectionPath), folderData);
+
+                displayStatus(`¡Carpeta "${folderName}" creada!`, 'bg-green-600', statusElement);
+                nameInput.value = '';
+                setTimeout(() => hideModal('createFolderModal'), 1000);
+
+            } catch (error) {
+                console.error("Error creando carpeta:", error);
+                displayStatus(`Error creando carpeta: ${error.message}`, 'bg-red-600', statusElement);
+            } finally {
+                createButton.textContent = 'Create Folder';
+                createButton.disabled = false;
+            }
+        }
+
+        function setupFoldersListener() {
+            if (!db || !userId) return;
+
+            document.getElementById('folder-loading-spinner').classList.remove('hidden');
+            foldersList.innerHTML = '';
+            
+            const collectionPath = `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`;
+            const q = query(collection(db, collectionPath));
+
+            onSnapshot(q, (snapshot) => {
+                document.getElementById('folder-loading-spinner').classList.add('hidden');
+                allFolders = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allFolders.push({ 
+                        id: doc.id, 
+                        ...data,
+                        songReferences: data.songReferences || []
+                    });
+                });
+                renderFoldersList(allFolders);
+
+                if (currentFolderId) {
+                    renderFolderDetail(currentFolderId);
+                }
+            }, (error) => {
+                console.error("Error fetching folders (Permissions?):", error);
+                document.getElementById('folder-loading-spinner').classList.add('hidden');
+            });
+        }
+
+        function renderFoldersList(folders) {
+            foldersList.innerHTML = '';
+            
+            if (folders.length === 0) {
+                noFoldersMessage.classList.remove('hidden');
+            } else {
+                noFoldersMessage.classList.add('hidden');
+                folders.forEach(folder => {
+                    const folderElement = createFolderElement(folder);
+                    foldersList.appendChild(folderElement);
+                });
+            }
+        }
+
+        function createFolderElement(folder) {
+            const div = document.createElement('div');
+            div.className = 'folder-item p-4 flex justify-between items-center cursor-pointer hover:bg-gray-600 transition';
+            div.onclick = () => showView(`folderDetail-${folder.id}`); 
+            
+            const songCount = folder.songReferences ? folder.songReferences.length : 0;
+            const owner = folder.ownerNickname || `User-${folder.ownerId.substring(0, 8)}...`;
+            
+            div.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="folder" class="w-6 h-6 text-yellow-400"></i>
+                    <div>
+                        <p class="font-semibold text-lg text-gray-100">${folder.name}</p>
+                        <p class="text-sm text-gray-400">${songCount} song${songCount === 1 ? '' : 's'} | Created by: ${owner}</p>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+            `;
+            lucide.createIcons();
             return div;
         }
 
-        // --- SETUP DE EVENT LISTENERS INICIALES ---
-        function setupInitialEventListeners() {
-            // Navegación
-            document.getElementById('nav-home').addEventListener('click', () => showView('home'));
-            document.getElementById('nav-folders').addEventListener('click', () => showView('folders'));
-            document.getElementById('back-to-folders-btn').addEventListener('click', () => showView('folders'));
+        function renderFolderDetail(folderId) {
+            const folder = allFolders.find(f => f.id === folderId);
+            const listElement = document.getElementById('folder-songs-list');
+            
+            if (!folder) {
+                listElement.innerHTML = '<p class="text-red-400">Error: Carpeta no encontrada.</p>';
+                return;
+            }
+            
+            document.getElementById('folder-detail-name').textContent = folder.name;
+            document.getElementById('folder-detail-owner').textContent = folder.ownerNickname;
+            
+            const songsInFolder = folder.songReferences.sort((a, b) => (a.order || 0) - (b.order || 0));
+            listElement.innerHTML = '';
 
-            // Nickname
-            document.getElementById('save-nickname-btn').addEventListener('click', () => {
-                const nicknameInput = document.getElementById('nickname-input');
-                const nickname = nicknameInput.value.trim();
-                if (nickname) {
-                    saveNickname(nickname);
-                } else {
-                    displayStatus('Nickname cannot be empty.', 'bg-yellow-600', document.getElementById('nickname-status'));
-                }
+            if (songsInFolder.length === 0) {
+                listElement.innerHTML = `<p class="text-center text-gray-500 mt-10">
+                    Esta carpeta está vacía. Añade canciones desde la pestaña "Home & Upload".
+                </p>`;
+                saveOrderBtn.disabled = true;
+                return;
+            }
+            
+            songsInFolder.forEach((song, index) => {
+                const songElement = createFolderSongElement(song, index + 1, folder.ownerId);
+                listElement.appendChild(songElement);
             });
+            
+            setupDragAndDrop(listElement);
+            saveOrderBtn.disabled = true;
 
-            // Búsqueda y Ordenamiento
-            searchInput.addEventListener('input', filterAndSortSongs);
-            sortRadios.forEach(radio => radio.addEventListener('change', filterAndSortSongs));
-
-            // Formulario de Carga
-            uploadForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const file = mp3File.files[0];
-                const name = customNameInput.value.trim();
-
-                if (!file) {
-                    displayStatus("Please select a file.", 'bg-yellow-600');
-                    return;
-                }
-                
-                // Validación de tamaño (40MB)
-                const MAX_SIZE = 40 * 1024 * 1024;
-                if (file.size > MAX_SIZE) {
-                    displayStatus("File is too large (max 40MB).", 'bg-red-600');
-                    return;
-                }
-
-                await uploadFileAndSaveMetadata(file, name);
-            });
+            if (folder.ownerId !== userId) {
+                 saveOrderBtn.disabled = true;
+                 listElement.classList.add('pointer-events-none', 'opacity-75');
+                 displayStatus('Solo el propietario puede ordenar esta carpeta.', 'bg-yellow-600', document.getElementById('folder-detail-view'));
+            } else {
+                 listElement.classList.remove('pointer-events-none', 'opacity-75');
+            }
         }
+
+        function createFolderSongElement(song, index, folderOwnerId) {
+            const div = document.createElement('div');
+            div.className = 'folder-song-item p-3 flex justify-between items-center bg-gray-600 border border-gray-500 cursor-move';
+            div.setAttribute('draggable', folderOwnerId === userId); 
+            div.setAttribute('data-song-id', song.songId);
+
+            div.innerHTML = `
+                <div class="flex items-center space-x-3 w-full">
+                    <span class="text-xl font-bold text-gray-400 w-8 text-right">${index}.</span>
+                    <div class="flex-grow">
+                        <p class="font-medium text-lg">${song.songName}</p>
+                        <audio controls class="mt-1 w-full" style="height: 35px;">
+                            <source src="${song.url}" type="audio/mp3">
+                        </audio>
+                    </div>
+                </div>
+                ${folderOwnerId === userId ? `
+                    <button class="remove-from-folder-btn p-2 rounded-full text-white bg-red-700 hover:bg-red-600 transition ml-3" data-song-id="${song.songId}">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                ` : ''}
+            `;
+            lucide.createIcons();
+            
+            const removeBtn = div.querySelector('.remove-from-folder-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    // Nota: Aquí se usa confirm() temporalmente
+                    if (confirm("¿Estás seguro de que quieres quitar esta canción de la carpeta?")) {
+                        removeSongFromFolder(currentFolderId, song.songId);
+                    }
+                });
+            }
+
+            return div;
+        }
+
+        let draggedItem = null;
+
+        function setupDragAndDrop(container) {
+            const items = container.querySelectorAll('.folder-song-item');
+
+            items.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = item;
+                    setTimeout(() => item.classList.add('opacity-50'), 0);
+                });
+
+                item.addEventListener('dragend', () => {
+                    draggedItem.classList.remove('opacity-50');
+                    draggedItem = null;
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const boundingBox = item.getBoundingClientRect();
+                    const offset = boundingBox.y + (boundingBox.height / 2);
+                    
+                    if (e.clientY < offset) {
+                        if (item !== draggedItem) {
+                            container.insertBefore(draggedItem, item);
+                            saveOrderBtn.disabled = false;
+                        }
+                    } else {
+                        if (item !== draggedItem) {
+                            container.insertBefore(draggedItem, item.nextSibling);
+                            saveOrderBtn.disabled = false;
+                        }
+                    }
+                });
+            });
+
+            container.addEventListener('dragover', (e) => e.preventDefault());
+        }
+
+        saveOrderBtn.addEventListener('click', async () => {
+            if (!currentFolderId || !db || !userId) return;
+
+            const listItems = document.getElementById('folder-songs-list').querySelectorAll('.folder-song-item');
+            
+            const newSongReferences = Array.from(listItems).map((item, index) => {
+                const songId = item.getAttribute('data-song-id');
+                const existingRef = allFolders.find(f => f.id === currentFolderId)?.songReferences.find(s => s.songId === songId);
+                
+                return {
+                    songId: existingRef.songId,
+                    songName: existingRef.songName,
+                    url: existingRef.url,
+                    order: index + 1 
+                };
+            });
+
+            const folderRef = doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, currentFolderId);
+
+            try {
+                await updateDoc(folderRef, {
+                    songReferences: newSongReferences
+                });
+
+                displayStatus('¡Orden de carpeta guardado con éxito!', 'bg-green-600', document.getElementById('folder-detail-view'));
+                saveOrderBtn.disabled = true;
+
+            } catch (error) {
+                console.error("Error saving new folder order:", error);
+                displayStatus(`Error al guardar el orden: ${error.message}`, 'bg-red-600', document.getElementById('folder-detail-view'));
+            }
+        });
         
-        // --- INICIALIZACIÓN ---
-        setupInitialEventListeners();
-        setupFirebase();
-        // ---
+        async function removeSongFromFolder(folderId, songId) {
+            if (!folderId || !db || !userId) return;
+            
+            const folder = allFolders.find(f => f.id === folderId);
+            if (!folder || folder.ownerId !== userId) return; 
+
+            try {
+                const newSongReferences = folder.songReferences
+                    .filter(ref => ref.songId !== songId) 
+                    .map((ref, index) => ({ ...ref, order: index + 1 })); 
+
+                const folderRef = doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, folderId);
+                
+                await updateDoc(folderRef, {
+                    songReferences: newSongReferences
+                });
+
+                displayStatus('Canción eliminada de la carpeta.', 'bg-yellow-600', document.getElementById('folder-detail-view'));
+
+            } catch (error) {
+                console.error("Error removing song from folder:", error);
+                displayStatus(`Error al eliminar la canción: ${error.message}`, 'bg-red-600', document.getElementById('folder-detail-view'));
+            }
+        }
+
+
+        // --- INICIALIZACIÓN Y EVENTOS ---
+
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                // Función de copia estándar para el navegador
+                document.execCommand('copy'); 
+                displayStatus('¡Enlace copiado al portapapeles!', 'bg-green-600');
+            } catch (err) {
+                console.error('Error al copiar el texto: ', err);
+                displayStatus('Error al copiar el enlace.', 'bg-red-600');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const mp3File = document.getElementById('mp3File').files[0];
+            const customName = document.getElementById('customName').value.trim();
+
+            if (!mp3File) {
+                displayStatus("Por favor, selecciona un archivo MP3.", 'bg-red-600');
+                return;
+            }
+
+            const MAX_FILE_SIZE = 40 * 1024 * 1024;
+            if (mp3File.size > MAX_FILE_SIZE) {
+                displayStatus("El archivo excede el límite de 40MB.", 'bg-red-600');
+                return;
+            }
+
+            uploadFileAndSaveMetadata(mp3File, customName);
+            uploadForm.reset(); 
+        });
+
+        searchInput.addEventListener('input', filterAndSortSongs);
+        sortRadios.forEach(radio => radio.addEventListener('change', filterAndSortSongs));
+
+        document.getElementById('nav-home').addEventListener('click', () => showView('home'));
+        document.getElementById('nav-folders').addEventListener('click', () => showView('folders'));
+        
+        // Listener para el botón "Back to Folders"
+        backToFoldersBtn.addEventListener('click', () => showView('folders'));
+
+        document.getElementById('save-nickname-btn').addEventListener('click', () => {
+            const nickname = document.getElementById('nickname-input').value;
+            saveNickname(nickname);
+        });
+
+
+        window.onload = initFirebase;
+        
+        async function initFirebase() {
+            const config = getFirebaseConfig();
+            
+            if (CLOUDINARY_CONFIG.cloudName === "YOUR_CLOUD_NAME" || CLOUDINARY_CONFIG.uploadPreset === "YOUR_UNSIGNED_UPLOAD_PRESET") {
+                uploadButton.textContent = "CLOUDINARY CONFIG REQUIRED";
+                uploadButton.classList.remove('btn-primary');
+                uploadButton.classList.add('btn-danger');
+                uploadButton.disabled = true;
+                return;
+            }
+
+            try {
+                uploadButton.textContent = "Connecting to DB...";
+                uploadButton.disabled = true;
+
+                app = initializeApp(config);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('error'); 
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        
+                        const nicknameInput = document.getElementById('nickname-input');
+                        const statusElement = document.getElementById('nickname-status');
+                        
+                        const profileRef = doc(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`, userId);
+                        
+                        // Obtener el nickname del perfil del usuario (ya configurado)
+                        try {
+                            const profileSnap = await getDoc(profileRef); 
+                            if (profileSnap.exists()) {
+                                nicknameInput.value = profileSnap.data().nickname;
+                                userProfiles[userId] = profileSnap.data().nickname; // Aseguramos el caché inicial
+                            } else {
+                                nicknameInput.value = `User-${userId.substring(0, 5)}`;
+                                displayStatus('Set your custom nickname!', 'bg-yellow-600', statusElement);
+                            }
+                        } catch (error) {
+                             console.error("Error al obtener el perfil inicial (Permissions?):", error);
+                             nicknameInput.value = `User-${userId.substring(0, 5)}`;
+                             displayStatus('Error al cargar nickname de la DB. Revisa los permisos.', 'bg-red-600', statusElement);
+                        }
+
+
+                        uploadButton.textContent = "Upload";
+                        uploadButton.classList.remove('btn-danger');
+                        uploadButton.classList.add('btn-primary');
+                        uploadButton.disabled = false;
+                        
+                        setupProfilesListener();
+                        setupSongsListener();
+                        setupFoldersListener(); 
+                    } else {
+                        isAuthReady = true;
+                        userId = null;
+                        uploadButton.textContent = "DB Configuration REQUIRED";
+                        uploadButton.classList.add('btn-danger');
+                        uploadButton.classList.remove('btn-primary');
+                        uploadButton.disabled = true;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Initialization/Authentication Error:", error);
+                uploadButton.textContent = "DB Failed. Check Console.";
+                uploadButton.classList.remove('btn-primary');
+                uploadButton.classList.add('btn-danger');
+                uploadButton.disabled = true;
+                loginStatusMessage.textContent = `FATAL: DB Error. ${error.code || error.message}`;
+                loginStatusMessage.className = 'text-center text-sm text-red-400 py-2 rounded-md font-medium';
+            }
+        }
     </script>
 </body>
 </html>
