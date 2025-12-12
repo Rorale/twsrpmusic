@@ -15,7 +15,7 @@
             --color-input-bg: #4b5563; /* Fondo de inputs */
             --color-primary: #3b82f6; /* Azul brillante para acciones (Upload) */
             --color-primary-hover: #2563eb;
-            --color-secondary: #10b981; /* Verde para éxito/copiar */
+            --color-secondary: #f59e0b; /* Naranja/Amarillo para el botón de acceso */
             --color-danger: #ef4444; /* Rojo para errores/eliminar */
         }
 
@@ -41,7 +41,7 @@
         /* Botones de acción */
         .btn-primary { background-color: var(--color-primary); color: white; transition: background-color 0.2s; }
         .btn-primary:hover { background-color: var(--color-primary-hover); }
-        .btn-secondary { background-color: #f59e0b; color: white; transition: background-color 0.2s; }
+        .btn-secondary { background-color: var(--color-secondary); color: white; transition: background-color 0.2s; }
         .btn-secondary:hover { background-color: #d97706; }
         .btn-danger { background-color: var(--color-danger); color: white; cursor: not-allowed; transition: background-color 0.2s; }
         .btn-danger:hover { background-color: #dc2626; }
@@ -84,8 +84,8 @@
         </nav>
     </header>
 
-    <div id="main-content-container">
-
+    <div id="main-content-container" class="hidden">
+        
         <div id="home-view" class="lg:flex lg:space-x-8">
             <div id="upload-card" class="w-full lg:w-1/2 p-6 card mb-8 lg:mb-0">
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-100">Upload your MP3s here</h2>
@@ -122,7 +122,7 @@
                 
                 <div id="loading-spinner" class="hidden text-center py-10">
                     <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
-                    <p class="text-blue-400 mt-2">Loading songs...</p>
+                    <p class="text-blue-400 mt-2">Cargando canciones...</p>
                 </div>
 
                 <p class="text-right text-gray-400 mb-4">Total: <span id="song-count" class="font-bold">0</span> songs</p>
@@ -138,7 +138,7 @@
 
                 <div id="music-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                     <div id="no-songs-message" class="text-center text-gray-500 mt-10 hidden">
-                        No songs uploaded yet. Be the first to upload one!
+                        No hay canciones subidas todavía. ¡Sube la primera!
                     </div>
                 </div>
             </div>
@@ -155,19 +155,19 @@
 
                 <div id="folder-loading-spinner" class="hidden text-center py-10">
                     <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
-                    <p class="text-blue-400 mt-2">Loading folders...</p>
+                    <p class="text-blue-400 mt-2">Cargando carpetas...</p>
                 </div>
                 
                 <div id="folders-list" class="space-y-4 min-h-[400px]">
                     <div id="no-folders-message" class="text-center text-gray-500 mt-10">
-                        No folders created yet. Be the first to create one.
+                        No hay carpetas creadas. Sé el primero en crear una.
                     </div>
                 </div>
             </div>
 
             <div id="folder-detail-view" class="hidden mt-8 p-6 card w-full">
                 <button id="back-to-folders-btn" class="text-blue-400 hover:text-blue-300 mb-4 font-semibold">&larr; Back to Folders</button>
-                <div id="folder-detail-status" class="hidden"></div> <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
+                <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
                     <h3 id="folder-detail-name" class="text-3xl font-bold text-yellow-400"></h3>
                     <p class="text-sm text-gray-400">Owner: <span id="folder-detail-owner" class="font-medium"></span></p>
                 </div>
@@ -186,6 +186,21 @@
         </div>
     </div>
     
+    <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100]">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-sm border-2 border-yellow-500">
+            <h3 class="text-2xl font-bold mb-4 text-center text-red-400">ACCESS DENIED</h3>
+            <p class="text-gray-300 mb-6 text-center">Please enter the password in order to gain access.</p>
+
+            <div id="password-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium text-white bg-red-600"></div>
+
+            <label for="password-input-access" class="block text-sm font-medium mb-1 text-gray-300">Password required</label>
+            <input type="password" id="password-input-access" class="input-style p-3 w-full mb-4 text-center" placeholder="*************">
+            
+            <button id="enter-access-btn" class="w-full py-3 rounded-lg font-bold text-lg btn-secondary">
+                Enter
+            </button>
+        </div>
+    </div>
     <footer class="mt-8 pt-4 text-center text-sm text-gray-400 border-t border-gray-600">
         &copy; 2025 made by Rorale. All rights reserved.
     </footer>
@@ -193,6 +208,9 @@
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
         <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-xl font-bold mb-4">Settings</h3>
+            <p class="text-sm text-yellow-300 mb-4">
+                ⚠️ **Permisos de DB:** Si no puedes guardar, verifica que tus Reglas de Seguridad de Firestore permitan *lectura y escritura* en las colecciones públicas.
+            </p>
             <div id="nickname-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
 
             <label for="nickname-input" class="block text-sm font-medium mb-1 text-gray-300">Your Nickname</label>
@@ -258,6 +276,12 @@
         // Inicializar iconos de Lucide
         lucide.createIcons();
 
+        // --- CONSTANTES DE SEGURIDAD Y TIEMPO (NUEVO) ---
+        const CORRECT_PASSWORD = "jawoHL_66";
+        const PASSWORD_STORAGE_KEY = "tws_access_valid_until";
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+        // --- FIN CONSTANTES DE SEGURIDAD Y TIEMPO ---
+        
         // --- FUNCIONES DE UTILIDAD PARA CLOUDINARY ---
         // Función para limpiar una cadena y hacerla segura para URL/Public ID, manteniendo la capitalización.
         function createSafePublicId(text) {
@@ -312,7 +336,13 @@
         const homeView = document.getElementById('home-view'); 
         const foldersView = document.getElementById('folders-view'); 
         const backToFoldersBtn = document.getElementById('back-to-folders-btn'); 
-        const folderDetailStatus = document.getElementById('folder-detail-status'); // NEW: Specific folder status element
+        
+        // Elementos DOM para el nuevo acceso (NUEVO)
+        const passwordModal = document.getElementById('password-modal');
+        const mainContentContainer = document.getElementById('main-content-container');
+        const passwordInput = document.getElementById('password-input-access');
+        const enterAccessBtn = document.getElementById('enter-access-btn');
+        const passwordStatus = document.getElementById('password-status');
         
         // Estado de la interfaz
         let allSongs = [];
@@ -353,12 +383,21 @@
         // --- FUNCIONES DE UTILIDAD DE UI ---
         function displayStatus(message, type = 'bg-blue-800', element = uploadStatus) {
             element.textContent = message;
-            // The status element is cleared before reuse, so we only need to set the classes and unhide it.
             element.className = `p-3 rounded-lg text-sm mb-4 font-semibold ${type} text-white`;
             element.classList.remove('hidden');
             setTimeout(() => {
                 element.classList.add('hidden');
             }, 8000);
+        }
+        
+        // Función para mostrar estado en la modal de contraseña (NUEVO)
+        function displayPasswordStatus(message, type = 'bg-red-600') {
+            passwordStatus.textContent = message;
+            passwordStatus.className = `p-2 rounded-md text-sm mb-4 font-medium text-white ${type}`;
+            passwordStatus.classList.remove('hidden');
+            setTimeout(() => {
+                 passwordStatus.classList.add('hidden');
+            }, 5000);
         }
 
         // Lógica para alternar las vistas sin superponerse (comportamiento de pestañas)
@@ -367,7 +406,6 @@
             foldersView.classList.add('hidden');
             folderDetailView.classList.add('hidden');
             foldersMainContent.classList.remove('hidden'); 
-            folderDetailStatus.classList.add('hidden'); // Clear folder detail status on view change
 
             if (viewName === 'home') {
                 homeView.classList.remove('hidden');
@@ -401,26 +439,20 @@
             statusElement.classList.add('hidden');
 
             if (!db || !userId) {
-                 displayStatus('Error: DB or User not available.', 'bg-red-600', statusElement);
+                 displayStatus('Error: DB o Usuario no disponible.', 'bg-red-600', statusElement);
                  return;
             }
 
             try {
                 const profileRef = doc(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`, userId);
                 await setDoc(profileRef, { nickname: nickname.trim(), lastUpdate: new Date() }, { merge: true });
-                displayStatus(`Nickname saved: ${nickname}`, 'bg-green-600', statusElement);
+                displayStatus(`Nickname guardado: ${nickname}`, 'bg-green-600', statusElement);
                 userProfiles[userId] = nickname.trim();
                 filterAndSortSongs();
-                
-                // Refresh folder list to update owner nickname if user had one
-                if (currentView === 'folders' || currentView.startsWith('folderDetail-')) {
-                    setupFoldersListener(); 
-                }
-
             } catch (error) {
-                // If fails due to permissions, it should be visible to the user
+                // Si falla por permisos, debe ser visible al usuario
                 console.error("Error saving nickname:", error);
-                displayStatus('Error saving nickname. Check Firestore permissions.', 'bg-red-600', statusElement);
+                displayStatus('Error al guardar el nickname. Revisa los permisos de Firestore.', 'bg-red-600', statusElement);
             }
         }
 
@@ -437,11 +469,9 @@
                 
                 if (currentView === 'home') {
                     filterAndSortSongs();
-                } else if (currentView === 'folders') {
-                    renderFoldersList(allFolders);
                 }
             }, (error) => {
-                // If fails due to permissions, show error in console
+                // Si falla por permisos, mostrar error en consola
                 console.error("Error fetching profiles (Permissions?):", error);
             });
         }
@@ -449,7 +479,7 @@
         // --- LÓGICA DE SUBIDA DE ARCHIVOS ---
         async function uploadFileAndSaveMetadata(file, customName) {
             if (!db || !userId) {
-                displayStatus("Error: Not authenticated or DB not initialized.", 'bg-red-600');
+                displayStatus("Error: No autenticado o DB no inicializada.", 'bg-red-600');
                 return;
             }
 
@@ -503,11 +533,11 @@
 
                 await addDoc(collection(db, collectionPath), songData);
                 
-                displayStatus(`"${songName}" uploaded and registered successfully! Clean URL link generated.`, 'bg-green-600');
+                displayStatus(`¡"${songName}" subida y registrada con éxito! Enlace URL limpio generado.`, 'bg-green-600');
 
             } catch (error) {
                 console.error("Upload Error:", error);
-                displayStatus(`Error during upload or registration: ${error.message || error}`, 'bg-red-600');
+                displayStatus(`Error durante la subida o registro: ${error.message || error}`, 'bg-red-600');
             } finally {
                 uploadButton.textContent = "Upload";
                 uploadButton.disabled = false;
@@ -540,7 +570,7 @@
             }, (error) => {
                 console.error("Error fetching songs (Permissions?):", error);
                 loadingSpinner.classList.add('hidden');
-                displayStatus('Error loading list. Check Firestore Security Rules.', 'bg-yellow-600');
+                displayStatus('Error cargando la lista. Revisa las Reglas de Seguridad de Firestore.', 'bg-yellow-600');
             });
         }
 
@@ -639,8 +669,8 @@
                     const songId = e.currentTarget.getAttribute('data-id');
                     const cloudinaryId = e.currentTarget.getAttribute('data-cloudinary-id');
                     
-                    // Note: Changed confirmation to English
-                    if (confirm("Are you sure you want to delete this song? (This only deletes the DB record)")) {
+                    // Nota: Aquí se usa confirm() temporalmente para evitar modales complejos en HTML
+                    if (confirm("¿Estás seguro de que quieres eliminar esta canción? (Solo elimina el registro de la DB)")) {
                         deleteSong(songId, cloudinaryId);
                     }
                 });
@@ -651,7 +681,7 @@
         
         async function deleteSong(songId, cloudinaryId) {
             if (!db || !userId) {
-                displayStatus("Error: Not authenticated.", 'bg-red-600');
+                displayStatus("Error: No autenticado.", 'bg-red-600');
                 return;
             }
             
@@ -659,11 +689,10 @@
                 const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
                 const docRef = doc(db, collectionPath, songId);
                 await deleteDoc(docRef);
-                // Note: Changed message to English
-                displayStatus("Song deleted from record.", 'bg-yellow-600');
+                displayStatus("Canción eliminada del registro.", 'bg-yellow-600');
             } catch (error) {
                 console.error("Error deleting song from Firestore:", error);
-                displayStatus(`Error deleting song: ${error.message}`, 'bg-red-600');
+                displayStatus(`Error eliminando la canción: ${error.message}`, 'bg-red-600');
             }
         }
         
@@ -703,8 +732,7 @@
 
             const folder = allFolders.find(f => f.id === folderId);
             if (!folder) {
-                // Note: Changed message to English
-                displayStatus('Folder not found.', 'bg-red-600', statusElement);
+                displayStatus('Carpeta no encontrada.', 'bg-red-600', statusElement);
                 return;
             }
 
@@ -719,8 +747,7 @@
             
             const exists = folder.songReferences.some(ref => ref.songId === songRef.songId);
             if (exists) {
-                // Note: Changed message to English
-                displayStatus('Song is already in this folder.', 'bg-yellow-600', statusElement);
+                displayStatus('La canción ya está en esta carpeta.', 'bg-yellow-600', statusElement);
                 return;
             }
 
@@ -733,15 +760,13 @@
                     songReferences: newSongReferences
                 });
                 
-                // Note: Changed message to English
-                displayStatus(`Song added to "${folder.name}" successfully!`, 'bg-green-600', statusElement);
+                displayStatus(`Canción añadida a "${folder.name}" con éxito!`, 'bg-green-600', statusElement);
                 hideModal('addSongModal');
                 songToAddMetadata = null;
 
             } catch (error) {
                 console.error("Error adding song to folder:", error);
-                // Note: Changed message to English
-                displayStatus(`Error adding song: ${error.message}`, 'bg-red-600', statusElement);
+                displayStatus(`Error al añadir la canción: ${error.message}`, 'bg-red-600', statusElement);
             }
         });
 
@@ -756,11 +781,9 @@
             const nameInput = document.getElementById('folder-name-input');
             const statusElement = document.getElementById('folder-creation-status');
             const folderName = nameInput.value.trim();
-            const currentUserNickname = userProfiles[userId];
 
             if (!folderName) {
-                // Note: Changed message to English
-                displayStatus('Folder name cannot be empty.', 'bg-red-600', statusElement);
+                displayStatus('El nombre de la carpeta no puede estar vacío.', 'bg-red-600', statusElement);
                 return;
             }
 
@@ -773,7 +796,7 @@
                 const folderData = {
                     name: folderName,
                     ownerId: userId,
-                    ownerNickname: currentUserNickname || `User-${userId.substring(0, 8)}...`,
+                    ownerNickname: userProfiles[userId] || `User-${userId.substring(0, 8)}...`,
                     songReferences: [], 
                     createdAt: new Date()
                 };
@@ -781,15 +804,13 @@
                 const collectionPath = `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`;
                 await addDoc(collection(db, collectionPath), folderData);
 
-                // Note: Changed message to English
-                displayStatus(`Folder "${folderName}" created!`, 'bg-green-600', statusElement);
+                displayStatus(`¡Carpeta "${folderName}" creada!`, 'bg-green-600', statusElement);
                 nameInput.value = '';
                 setTimeout(() => hideModal('createFolderModal'), 1000);
 
             } catch (error) {
-                console.error("Error creating folder:", error);
-                // Note: Changed message to English
-                displayStatus(`Error creating folder: ${error.message}`, 'bg-red-600', statusElement);
+                console.error("Error creando carpeta:", error);
+                displayStatus(`Error creando carpeta: ${error.message}`, 'bg-red-600', statusElement);
             } finally {
                 createButton.textContent = 'Create Folder';
                 createButton.disabled = false;
@@ -866,16 +887,9 @@
         function renderFolderDetail(folderId) {
             const folder = allFolders.find(f => f.id === folderId);
             const listElement = document.getElementById('folder-songs-list');
-            const currentUserNickname = userProfiles[userId];
-            const isOwnerByNickname = folder && folder.ownerNickname === currentUserNickname;
-
-            // Clear previous status message
-            folderDetailStatus.classList.add('hidden');
-            folderDetailStatus.textContent = '';
             
             if (!folder) {
-                // Note: Changed message to English
-                listElement.innerHTML = '<p class="text-red-400">Error: Folder not found.</p>';
+                listElement.innerHTML = '<p class="text-red-400">Error: Carpeta no encontrada.</p>';
                 return;
             }
             
@@ -887,37 +901,33 @@
 
             if (songsInFolder.length === 0) {
                 listElement.innerHTML = `<p class="text-center text-gray-500 mt-10">
-                    This folder is empty. Add songs from the "Home & Upload" tab.
+                    Esta carpeta está vacía. Añade canciones desde la pestaña "Home & Upload".
                 </p>`;
                 saveOrderBtn.disabled = true;
-                listElement.classList.add('pointer-events-none', 'opacity-75'); // Still disable visual drag if empty
-            } else {
-                 listElement.classList.remove('pointer-events-none', 'opacity-75');
+                return;
             }
             
             songsInFolder.forEach((song, index) => {
-                // Pass the isOwnerByNickname boolean instead of folder.ownerId
-                const songElement = createFolderSongElement(song, index + 1, isOwnerByNickname);
+                const songElement = createFolderSongElement(song, index + 1, folder.ownerId);
                 listElement.appendChild(songElement);
             });
             
-            if (isOwnerByNickname) {
-                setupDragAndDrop(listElement);
-                saveOrderBtn.disabled = true; // Disabled until an order change is made
-            } else {
+            setupDragAndDrop(listElement);
+            saveOrderBtn.disabled = true;
+
+            if (folder.ownerId !== userId) {
                  saveOrderBtn.disabled = true;
-                 listElement.classList.add('pointer-events-none', 'opacity-75'); // Prevent interaction
-                 // Note: Changed message to English and uses dedicated status element
-                 displayStatus('Only the owner can reorder this folder.', 'bg-yellow-600', folderDetailStatus);
+                 listElement.classList.add('pointer-events-none', 'opacity-75');
+                 displayStatus('Solo el propietario puede ordenar esta carpeta.', 'bg-yellow-600', document.getElementById('folder-detail-view'));
+            } else {
+                 listElement.classList.remove('pointer-events-none', 'opacity-75');
             }
         }
 
-        // Updated function signature
-        function createFolderSongElement(song, index, isOwnerByNickname) {
+        function createFolderSongElement(song, index, folderOwnerId) {
             const div = document.createElement('div');
-            // Change class based on permissions
-            div.className = 'folder-song-item p-3 flex justify-between items-center bg-gray-600 border border-gray-500 ' + (isOwnerByNickname ? 'cursor-move' : 'cursor-default');
-            div.setAttribute('draggable', isOwnerByNickname); // Allow drag only for owner
+            div.className = 'folder-song-item p-3 flex justify-between items-center bg-gray-600 border border-gray-500 cursor-move';
+            div.setAttribute('draggable', folderOwnerId === userId); 
             div.setAttribute('data-song-id', song.songId);
 
             div.innerHTML = `
@@ -930,7 +940,7 @@
                         </audio>
                     </div>
                 </div>
-                ${isOwnerByNickname ? `
+                ${folderOwnerId === userId ? `
                     <button class="remove-from-folder-btn p-2 rounded-full text-white bg-red-700 hover:bg-red-600 transition ml-3" data-song-id="${song.songId}">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
@@ -941,8 +951,8 @@
             const removeBtn = div.querySelector('.remove-from-folder-btn');
             if (removeBtn) {
                 removeBtn.addEventListener('click', () => {
-                    // Note: Changed confirmation to English
-                    if (confirm("Are you sure you want to remove this song from the folder?")) {
+                    // Nota: Aquí se usa confirm() temporalmente
+                    if (confirm("¿Estás seguro de que quieres quitar esta canción de la carpeta?")) {
                         removeSongFromFolder(currentFolderId, song.songId);
                     }
                 });
@@ -958,33 +968,31 @@
 
             items.forEach(item => {
                 item.addEventListener('dragstart', (e) => {
-                    // Check for draggable attribute
-                    if (item.getAttribute('draggable') === 'false') {
-                        e.preventDefault();
-                        return;
-                    }
                     draggedItem = item;
                     setTimeout(() => item.classList.add('opacity-50'), 0);
                 });
 
                 item.addEventListener('dragend', () => {
-                    if (draggedItem) {
-                        draggedItem.classList.remove('opacity-50');
-                        draggedItem = null;
-                    }
+                    draggedItem.classList.remove('opacity-50');
+                    draggedItem = null;
                 });
 
                 item.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    if (!draggedItem || draggedItem === item) return;
-
                     const boundingBox = item.getBoundingClientRect();
                     const offset = boundingBox.y + (boundingBox.height / 2);
                     
-                    // Logic to insert before or after
-                    const target = e.clientY < offset ? item : item.nextSibling;
-                    container.insertBefore(draggedItem, target);
-                    saveOrderBtn.disabled = false;
+                    if (e.clientY < offset) {
+                        if (item !== draggedItem) {
+                            container.insertBefore(draggedItem, item);
+                            saveOrderBtn.disabled = false;
+                        }
+                    } else {
+                        if (item !== draggedItem) {
+                            container.insertBefore(draggedItem, item.nextSibling);
+                            saveOrderBtn.disabled = false;
+                        }
+                    }
                 });
             });
 
@@ -994,16 +1002,11 @@
         saveOrderBtn.addEventListener('click', async () => {
             if (!currentFolderId || !db || !userId) return;
 
-            const folder = allFolders.find(f => f.id === currentFolderId);
-            const currentUserNickname = userProfiles[userId];
-            // Access control check (Nickname based)
-            if (!folder || folder.ownerNickname !== currentUserNickname) return; 
-
             const listItems = document.getElementById('folder-songs-list').querySelectorAll('.folder-song-item');
             
             const newSongReferences = Array.from(listItems).map((item, index) => {
                 const songId = item.getAttribute('data-song-id');
-                const existingRef = folder.songReferences.find(s => s.songId === songId);
+                const existingRef = allFolders.find(f => f.id === currentFolderId)?.songReferences.find(s => s.songId === songId);
                 
                 return {
                     songId: existingRef.songId,
@@ -1020,14 +1023,12 @@
                     songReferences: newSongReferences
                 });
 
-                // Note: Changed message to English and uses dedicated status element
-                displayStatus('Folder order saved successfully!', 'bg-green-600', folderDetailStatus);
+                displayStatus('¡Orden de carpeta guardado con éxito!', 'bg-green-600', document.getElementById('folder-detail-view'));
                 saveOrderBtn.disabled = true;
 
             } catch (error) {
                 console.error("Error saving new folder order:", error);
-                // Note: Changed message to English and uses dedicated status element
-                displayStatus(`Error saving order: ${error.message}`, 'bg-red-600', folderDetailStatus);
+                displayStatus(`Error al guardar el orden: ${error.message}`, 'bg-red-600', document.getElementById('folder-detail-view'));
             }
         });
         
@@ -1035,10 +1036,7 @@
             if (!folderId || !db || !userId) return;
             
             const folder = allFolders.find(f => f.id === folderId);
-            const currentUserNickname = userProfiles[userId];
-            
-            // Access control check (Nickname based)
-            if (!folder || folder.ownerNickname !== currentUserNickname) return; 
+            if (!folder || folder.ownerId !== userId) return; 
 
             try {
                 const newSongReferences = folder.songReferences
@@ -1051,13 +1049,11 @@
                     songReferences: newSongReferences
                 });
 
-                // Note: Changed message to English and uses dedicated status element
-                displayStatus('Song removed from folder.', 'bg-yellow-600', folderDetailStatus);
+                displayStatus('Canción eliminada de la carpeta.', 'bg-yellow-600', document.getElementById('folder-detail-view'));
 
             } catch (error) {
                 console.error("Error removing song from folder:", error);
-                // Note: Changed message to English and uses dedicated status element
-                displayStatus(`Error removing song: ${error.message}`, 'bg-red-600', folderDetailStatus);
+                displayStatus(`Error al eliminar la canción: ${error.message}`, 'bg-red-600', document.getElementById('folder-detail-view'));
             }
         }
 
@@ -1072,12 +1068,10 @@
             try {
                 // Función de copia estándar para el navegador
                 document.execCommand('copy'); 
-                // Note: Changed message to English
-                displayStatus('Link copied to clipboard!', 'bg-green-600');
+                displayStatus('¡Enlace copiado al portapapeles!', 'bg-green-600');
             } catch (err) {
-                console.error('Error copying text: ', err);
-                // Note: Changed message to English
-                displayStatus('Error copying link.', 'bg-red-600');
+                console.error('Error al copiar el texto: ', err);
+                displayStatus('Error al copiar el enlace.', 'bg-red-600');
             }
             document.body.removeChild(textarea);
         }
@@ -1088,15 +1082,13 @@
             const customName = document.getElementById('customName').value.trim();
 
             if (!mp3File) {
-                // Note: Changed message to English
-                displayStatus("Please select an MP3 file.", 'bg-red-600');
+                displayStatus("Por favor, selecciona un archivo MP3.", 'bg-red-600');
                 return;
             }
 
             const MAX_FILE_SIZE = 40 * 1024 * 1024;
             if (mp3File.size > MAX_FILE_SIZE) {
-                // Note: Changed message to English
-                displayStatus("File exceeds the 40MB limit.", 'bg-red-600');
+                displayStatus("El archivo excede el límite de 40MB.", 'bg-red-600');
                 return;
             }
 
@@ -1118,9 +1110,60 @@
             saveNickname(nickname);
         });
 
-
-        window.onload = initFirebase;
+        // --- LÓGICA DE ACCESO CON CONTRASEÑA (NUEVO) ---
         
+        function handlePasswordEntry() {
+            const enteredPassword = passwordInput.value;
+            if (enteredPassword === CORRECT_PASSWORD) {
+                // Contraseña correcta
+                const expiryTime = new Date().getTime() + THREE_DAYS_MS;
+                localStorage.setItem(PASSWORD_STORAGE_KEY, expiryTime.toString());
+                
+                // Ocultar modal de contraseña y mostrar contenido principal
+                passwordModal.classList.add('hidden');
+                mainContentContainer.classList.remove('hidden');
+                
+                // Iniciar la aplicación
+                initFirebase();
+
+            } else {
+                // Contraseña incorrecta
+                displayPasswordStatus('Incorrect password. Access denied.', 'bg-red-600');
+                passwordInput.value = ''; // Limpiar el campo
+                passwordInput.focus();
+            }
+        }
+        
+        // Event Listeners para la modal de contraseña
+        enterAccessBtn.addEventListener('click', handlePasswordEntry);
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handlePasswordEntry();
+            }
+        });
+
+        // Función de chequeo de acceso inicial
+        function checkPasswordAccess() {
+            const storedExpiry = localStorage.getItem(PASSWORD_STORAGE_KEY);
+            const currentTime = new Date().getTime();
+
+            if (storedExpiry && parseInt(storedExpiry) > currentTime) {
+                // Acceso válido (menos de 3 días)
+                passwordModal.classList.add('hidden');
+                mainContentContainer.classList.remove('hidden');
+                initFirebase();
+            } else {
+                // Acceso expirado o nunca concedido
+                passwordModal.classList.remove('hidden');
+                mainContentContainer.classList.add('hidden');
+                passwordInput.focus();
+            }
+        }
+
+        window.onload = checkPasswordAccess;
+        
+        // --- FIN LÓGICA DE ACCESO CON CONTRASEÑA ---
+
         async function initFirebase() {
             const config = getFirebaseConfig();
             
@@ -1168,10 +1211,9 @@
                                 displayStatus('Set your custom nickname!', 'bg-yellow-600', statusElement);
                             }
                         } catch (error) {
-                             console.error("Error fetching initial profile (Permissions?):", error);
+                             console.error("Error al obtener el perfil inicial (Permissions?):", error);
                              nicknameInput.value = `User-${userId.substring(0, 5)}`;
-                             // Note: Changed message to English
-                             displayStatus('Error loading nickname from DB. Check your permissions.', 'bg-red-600', statusElement);
+                             displayStatus('Error al cargar nickname de la DB. Revisa los permisos.', 'bg-red-600', statusElement);
                         }
 
 
