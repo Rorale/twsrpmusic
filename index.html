@@ -27,7 +27,7 @@
         .container { max-width: 90%; margin: 0 auto; padding: 20px; }
         .card { 
             background-color: var(--color-bg-card); 
-            border: 1px solid #4b5563; /* Borde sutil */
+            border: 1px solid #4b5563; 
             border-radius: 12px; 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
@@ -38,32 +38,29 @@
             color: var(--color-text);
             border-radius: 8px;
         }
-        /* Botones de acción */
+
+        /* CORRECCIÓN DE BOTONES: Quitamos el cursor de la clase de color */
         .btn-primary { background-color: var(--color-primary); color: white; transition: background-color 0.2s; }
         .btn-primary:hover { background-color: var(--color-primary-hover); }
         .btn-secondary { background-color: #f59e0b; color: white; transition: background-color 0.2s; }
-        .btn-secondary:hover { background-color: #d97706; }
-        .btn-danger { background-color: var(--color-danger); color: white; cursor: not-allowed; transition: background-color 0.2s; }
-        .btn-danger:hover { background-color: #dc2626; }
+        .btn-danger { background-color: var(--color-danger); color: white; transition: background-color 0.2s; }
+        
+        /* El símbolo 🚫 solo aparecerá si el botón está REALMENTE deshabilitado */
+        button:disabled { cursor: not-allowed; opacity: 0.7; }
+        button:enabled { cursor: pointer; }
+
         .nav-link { cursor: pointer; padding: 8px 12px; border-radius: 6px; }
         .nav-link.active { background-color: var(--color-primary); color: white; }
 
-        /* Player styles */
         audio::-webkit-media-controls-panel { background-color: #4b5563; border-radius: 8px; }
-        audio { height: 40px; } /* Ajuste de altura */
+        audio { height: 40px; }
 
-        /* Estilo para las tarjetas de canciones/carpetas */
         .song-item, .folder-item, .folder-song-item {
             border: 1px solid #4b5563;
             border-radius: 8px;
-            background-color: #4b5563; /* Más oscuro que el fondo principal para destacar */
+            background-color: #4b5563;
             transition: box-shadow 0.2s;
         }
-        .song-item:hover, .folder-item:hover {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Ocultar el estado de inicio de sesión para el usuario final */
         #login-status-message { display: none; }
     </style>
 </head>
@@ -85,62 +82,36 @@
     </header>
 
     <div id="main-content-container">
-
         <div id="home-view" class="lg:flex lg:space-x-8">
             <div id="upload-card" class="w-full lg:w-1/2 p-6 card mb-8 lg:mb-0">
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-100">Upload your MP3s here</h2>
-
                 <div id="upload-status" class="hidden p-3 rounded-lg text-sm mb-4 font-semibold" role="alert"></div>
 
                 <form id="uploadForm" class="space-y-6">
-                    <p class="text-red-400 text-sm font-semibold">
-                        Note: Max. file size upload is 40MB. The use of this site is intended for RP purposes only.
-                    </p>
-
+                    <p class="text-red-400 text-sm font-semibold">Note: Max size 40MB. For RP purposes only.</p>
                     <div>
                         <label for="mp3File" class="block text-sm font-medium mb-1 text-gray-300">Choose MP3 File</label>
-                        <input type="file" id="mp3File" accept="audio/mp3" required class="input-style p-3 w-full rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-800 file:text-blue-200 hover:file:bg-blue-700">
+                        <input type="file" id="mp3File" accept="audio/mp3" required class="input-style p-3 w-full rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-800 file:text-blue-200">
                     </div>
-
                     <div>
                         <label for="customName" class="block text-sm font-medium mb-1 text-gray-300">Custom Name (Used for URL)</label>
-                        <input type="text" id="customName" placeholder="Ex: Airship (will be airship.mp3 in URL)" class="input-style p-3 w-full rounded-lg">
+                        <input type="text" id="customName" placeholder="Ex: Airship" class="input-style p-3 w-full rounded-lg">
                     </div>
                     
                     <button type="submit" id="uploadButton" class="w-full py-3 rounded-lg font-bold text-lg btn-danger" disabled>
-                        DB Configuration MISSING
+                        Connecting to DB...
                     </button>
-
-                    <div id="login-status-message" class="text-center text-sm text-gray-400 py-2 rounded-md">
-                        Please log in to access the system.
-                    </div>
                 </form>
             </div>
 
             <div id="links-card" class="w-full lg:w-1/2 p-6 card">
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-100">Uploaded Music Links</h2>
-                
                 <div id="loading-spinner" class="hidden text-center py-10">
                     <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
-                    <p class="text-blue-400 mt-2">Loading songs...</p>
                 </div>
-
                 <p class="text-right text-gray-400 mb-4">Total: <span id="song-count" class="font-bold">0</span> songs</p>
-
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
-                    <input type="text" id="search-input" placeholder="Search song by name..." class="input-style p-3 rounded-lg w-full sm:w-2/3">
-                    <div class="flex space-x-2 text-sm text-gray-300 font-medium">
-                        <label><input type="radio" name="sort" value="alpha" class="text-blue-400"> Alphabetical</label>
-                        <label><input type="radio" name="sort" value="newest" checked class="text-blue-400"> Newest</label>
-                        <label><input type="radio" name="sort" value="oldest" class="text-blue-400"> Oldest</label>
-                    </div>
-                </div>
-
-                <div id="music-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                    <div id="no-songs-message" class="text-center text-gray-500 mt-10 hidden">
-                        No songs uploaded yet. Be the first to upload one!
-                    </div>
-                </div>
+                <input type="text" id="search-input" placeholder="Search song by name..." class="input-style p-3 rounded-lg w-full mb-6">
+                <div id="music-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
             </div>
         </div>
 
@@ -149,58 +120,30 @@
                 <div class="flex justify-between items-center mb-6 border-b border-gray-600 pb-4">
                     <h2 class="text-2xl font-bold text-gray-100">User Folders (Playlists)</h2>
                     <button class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" onclick="showModal('createFolderModal')">
-                        <i data-lucide="folder-plus" class="w-5 h-5 inline mr-1"></i> Create New Folder
+                        <i data-lucide="folder-plus" class="w-5 h-5 inline mr-1"></i> Create Folder
                     </button>
                 </div>
-
-                <div id="folder-loading-spinner" class="hidden text-center py-10">
-                    <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-blue-400 border-opacity-25 rounded-full"></div>
-                    <p class="text-blue-400 mt-2">Loading folders...</p>
-                </div>
-                
-                <div id="folders-list" class="space-y-4 min-h-[400px]">
-                    <div id="no-folders-message" class="text-center text-gray-500 mt-10">
-                        No folders created yet. Be the first to create one.
-                    </div>
-                </div>
+                <div id="folders-list" class="space-y-4 min-h-[400px]"></div>
             </div>
 
             <div id="folder-detail-view" class="hidden mt-8 p-6 card w-full">
                 <button id="back-to-folders-btn" class="text-blue-400 hover:text-blue-300 mb-4 font-semibold">&larr; Back to Folders</button>
-                <div id="folder-detail-status" class="hidden"></div> <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
-                    <h3 id="folder-detail-name" class="text-3xl font-bold text-yellow-400"></h3>
-                    <p class="text-sm text-gray-400">Owner: <span id="folder-detail-owner" class="font-medium"></span></p>
-                </div>
-                
-                <p class="text-gray-400 mb-4">Drag and drop songs below to reorder your playlist.</p>
-                
-                <div id="folder-songs-list" class="space-y-3">
-                    </div>
-
+                <h3 id="folder-detail-name" class="text-3xl font-bold text-yellow-400"></h3>
+                <div id="folder-songs-list" class="space-y-3 mt-4"></div>
                 <div class="mt-6 flex justify-end">
-                    <button id="save-order-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" disabled>
-                        Save Order
-                    </button>
+                    <button id="save-order-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600" disabled>Save Order</button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <footer class="mt-8 pt-4 text-center text-sm text-gray-400 border-t border-gray-600">
-        &copy; 2025 made by Rorale. All rights reserved.
-    </footer>
 
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
         <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-xl font-bold mb-4">Settings</h3>
-            <div id="nickname-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
-
-            <label for="nickname-input" class="block text-sm font-medium mb-1 text-gray-300">Your Nickname</label>
-            <input type="text" id="nickname-input" class="input-style p-2 w-full mb-4" placeholder="Enter your desired nickname">
-            
+            <input type="text" id="nickname-input" class="input-style p-2 w-full mb-4" placeholder="Nickname">
             <div class="flex justify-end space-x-2">
-                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('settingsModal')">Close</button>
-                <button id="save-nickname-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition">Save Nickname</button>
+                <button class="bg-red-600 p-2 rounded text-white" onclick="hideModal('settingsModal')">Close</button>
+                <button id="save-nickname-btn" class="bg-blue-600 p-2 rounded text-white">Save</button>
             </div>
         </div>
     </div>
@@ -208,14 +151,10 @@
     <div id="createFolderModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
         <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-xl font-bold mb-4">Create New Folder</h3>
-            <div id="folder-creation-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
-
-            <label for="folder-name-input" class="block text-sm font-medium mb-1 text-gray-300">Folder Name</label>
-            <input type="text" id="folder-name-input" class="input-style p-2 w-full mb-4" placeholder="Ex: Best of RPGs OST">
-            
+            <input type="text" id="folder-name-input" class="input-style p-2 w-full mb-4" placeholder="Folder Name">
             <div class="flex justify-end space-x-2">
-                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('createFolderModal')">Cancel</button>
-                <button id="create-folder-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition">Create Folder</button>
+                <button class="bg-red-600 p-2 rounded text-white" onclick="hideModal('createFolderModal')">Cancel</button>
+                <button id="create-folder-btn" class="bg-green-600 p-2 rounded text-white">Create</button>
             </div>
         </div>
     </div>
@@ -223,700 +162,149 @@
     <div id="addSongModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
         <div class="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 class="text-xl font-bold mb-4">Add "<span id="song-to-add-name" class="text-yellow-400"></span>" to Folder</h3>
-            <div id="add-song-status" class="hidden p-2 rounded-md text-sm mb-4 font-medium"></div>
-
-            <label for="folder-select" class="block text-sm font-medium mb-1 text-gray-300">Select Folder</label>
-            <select id="folder-select" class="input-style p-2 w-full mb-4">
-                <option value="" disabled selected>-- Select a folder --</option>
-            </select>
-            
+            <select id="folder-select" class="input-style p-2 w-full mb-4"></select>
             <div class="flex justify-end space-x-2">
-                <button class="py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" onclick="hideModal('addSongModal')">Cancel</button>
-                <button id="confirm-add-song-btn" class="py-2 px-4 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition" disabled>Add Song</button>
+                <button class="bg-red-600 p-2 rounded text-white" onclick="hideModal('addSongModal')">Cancel</button>
+                <button id="confirm-add-song-btn" class="bg-blue-600 p-2 rounded text-white" disabled>Add Song</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Hacemos que estas funciones sean globales y accesibles desde el atributo onclick="" del HTML.
-        function showModal(id) {
-            document.getElementById(id)?.classList.remove('hidden');
-        }
-
-        function hideModal(id) {
-            document.getElementById(id)?.classList.add('hidden');
-        }
+        function showModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+        function hideModal(id) { document.getElementById(id)?.classList.add('hidden'); }
     </script>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Inicializar iconos de Lucide
         lucide.createIcons();
 
-        // --- FUNCIONES DE UTILIDAD PARA CLOUDINARY ---
-        // Función para limpiar una cadena y hacerla segura para URL/Public ID, manteniendo la capitalización.
-        function createSafePublicId(text) {
-            return text
-                .trim()
-                // Eliminar caracteres problemáticos de Cloudinary/filesystem, pero mantener A-Z y a-z
-                .replace(/[\\/:*?"<>|&#]/g, '') 
-                // Reemplazar espacios, guiones y puntos con guión bajo (underscore)
-                .replace(/[\s\-\.]+/g, '_');    
-        }
-        // --- FIN FUNCIONES DE UTILIDAD ---
+        const appId = 'default-app-id';
+        const CLOUDINARY_CONFIG = { cloudName: "daj3jaqd9", uploadPreset: "tws_music_uploads", folder: "music" };
+        const SONG_COLLECTION = 'uploaded_songs_cloudinary';
+        const PROFILE_COLLECTION = 'user_profiles';
+        const FOLDER_COLLECTION = 'user_folders';
 
-        // Configuración Global y Variables
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        // Variables de Firebase
-        let app, db, auth, userId = null;
-        let isAuthReady = false;
+        let db, auth, userId = null;
+        let allSongs = [], userProfiles = {}, allFolders = [];
+        let currentFolderId = null, songToAddMetadata = null;
 
-        // --- CONFIGURACIÓN DE CLOUDINARY (IMPORTANTE) ---
-        const CLOUDINARY_CONFIG = {
-            cloudName: "daj3jaqd9",
-            uploadPreset: "tws_music_uploads",
-            folder: "music" 
-        };
-        // --- FIN CONFIGURACIÓN CLOUDINARY ---
-
-        // --- CONFIGURACIÓN DE FIRESTORE ---
-        const SONG_COLLECTION_NAME = 'uploaded_songs_cloudinary'; // Catálogo de canciones
-        const PROFILE_COLLECTION_NAME = 'user_profiles'; // Catálogo de perfiles/nicknames
-        const FOLDER_COLLECTION_NAME = 'user_folders'; // Catálogo de carpetas
-
-        // Elementos del DOM
         const uploadButton = document.getElementById('uploadButton');
-        const uploadStatus = document.getElementById('upload-status');
-        const uploadForm = document.getElementById('uploadForm');
         const musicList = document.getElementById('music-list');
-        const songCountElement = document.getElementById('song-count');
-        const loginStatusMessage = document.getElementById('login-status-message');
         const searchInput = document.getElementById('search-input');
-        const sortRadios = document.querySelectorAll('input[name="sort"]');
-        const noSongsMessage = document.getElementById('no-songs-message');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const foldersList = document.getElementById('folders-list');
-        const noFoldersMessage = document.getElementById('no-folders-message');
-        const saveOrderBtn = document.getElementById('save-order-btn');
-        const folderDetailView = document.getElementById('folder-detail-view');
-        const foldersMainContent = document.getElementById('folders-main-content');
-        const homeView = document.getElementById('home-view'); 
-        const foldersView = document.getElementById('folders-view'); 
-        const backToFoldersBtn = document.getElementById('back-to-folders-btn'); 
-        const folderDetailStatus = document.getElementById('folder-detail-status'); 
-        
-        // Estado de la interfaz
-        let allSongs = [];
-        let userProfiles = {}; // Cache para nicknames
-        let allFolders = [];
-        let currentView = 'home';
-        let currentFolderId = null; 
-        let songToAddMetadata = null; 
 
-        // Función para obtener la configuración (DATOS INSERTADOS AQUÍ)
-        function getFirebaseConfig() {
-            const YOUR_FIREBASE_CONFIG = {
-                apiKey: "AIzaSyBipp_qEAamELRQJDGz7wWb6LUDyj7-cRQ",
-                authDomain: "music-host-site.firebaseapp.com",
-                projectId: "music-host-site",
-                storageBucket: "music-host-site.firebasestorage.app",
-                messagingSenderId: "761480568190",
-                appId: "1:761480568190:web:0b9ff1adbe1843c86f672f",
-                measurementId: "G-B15CZRFHK5"
-            };
-
-            if (firebaseConfigRaw) {
-                try {
-                    const envConfig = JSON.parse(firebaseConfigRaw);
-                    if (envConfig && envConfig.apiKey) {
-                        return envConfig;
-                    }
-                } catch (e) {
-                    console.error("Error parsing Firebase environment configuration:", e);
-                }
-            }
-            
-            return YOUR_FIREBASE_CONFIG;
+        function createSafePublicId(text) {
+            return text.trim().replace(/[\\/:*?"<>|&#]/g, '').replace(/[\s\-\.]+/g, '_');
         }
 
-        // --- FUNCIONES DE UTILIDAD DE UI ---
-        function displayStatus(message, type = 'bg-blue-800', element = uploadStatus) {
-            element.textContent = message;
-            element.className = `p-3 rounded-lg text-sm mb-4 font-semibold ${type} text-white`;
-            element.classList.remove('hidden');
-            setTimeout(() => {
-                element.classList.add('hidden');
-            }, 8000);
-        }
-
-        function showView(viewName) {
-            homeView.classList.add('hidden');
-            foldersView.classList.add('hidden');
-            folderDetailView.classList.add('hidden');
-            foldersMainContent.classList.remove('hidden'); 
-            folderDetailStatus.classList.add('hidden');
-
-            if (viewName === 'home') {
-                homeView.classList.remove('hidden');
-                currentFolderId = null;
-            } else if (viewName === 'folders') {
-                foldersView.classList.remove('hidden');
-                currentFolderId = null;
-            } else if (viewName.startsWith('folderDetail-')) {
-                const folderId = viewName.split('-')[1];
-                currentFolderId = folderId;
-                foldersView.classList.remove('hidden'); 
-                foldersMainContent.classList.add('hidden'); 
-                folderDetailView.classList.remove('hidden'); 
-                renderFolderDetail(folderId);
-            }
-
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            const navKey = viewName.startsWith('folderDetail') ? 'folders' : viewName;
-            document.getElementById(`nav-${navKey}`).classList.add('active');
-
-            currentView = viewName;
-        }
-
-        // --- LÓGICA DE NICKNAME ---
-
-        async function saveNickname(nickname) {
-            const statusElement = document.getElementById('nickname-status');
-            statusElement.classList.add('hidden');
-
-            if (!db || !userId) {
-                 displayStatus('Error: DB or User not available.', 'bg-red-600', statusElement);
-                 return;
-            }
-
-            try {
-                const profileRef = doc(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`, userId);
-                await setDoc(profileRef, { nickname: nickname.trim(), lastUpdate: new Date() }, { merge: true });
-                displayStatus(`Nickname saved: ${nickname}`, 'bg-green-600', statusElement);
-                userProfiles[userId] = nickname.trim();
-                filterAndSortSongs();
-                
-                if (currentView === 'folders' || currentView.startsWith('folderDetail-')) {
-                    setupFoldersListener(); 
-                }
-
-            } catch (error) {
-                console.error("Error saving nickname:", error);
-                displayStatus('Error saving nickname. Check Firestore permissions.', 'bg-red-600', statusElement);
-            }
-        }
-
-        function setupProfilesListener() {
-            if (!db || !userId) return;
-            const collectionPath = `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`;
-            const q = query(collection(db, collectionPath));
-
-            onSnapshot(q, (snapshot) => {
-                userProfiles = {};
-                snapshot.forEach((doc) => {
-                    userProfiles[doc.id] = doc.data().nickname || `User-${doc.id.substring(0, 5)}`;
-                });
-                
-                if (currentView === 'home') {
-                    filterAndSortSongs();
-                } else if (currentView === 'folders') {
-                    renderFoldersList(allFolders);
-                }
-            }, (error) => {
-                console.error("Error fetching profiles (Permissions?):", error);
-            });
-        }
-        
-        // --- LÓGICA DE SUBIDA DE ARCHIVOS ---
         async function uploadFileAndSaveMetadata(file, customName) {
-            if (!db || !userId) {
-                displayStatus("Error: Not authenticated or DB not initialized.", 'bg-red-600');
-                return;
-            }
-
-            const { cloudName, uploadPreset, folder } = CLOUDINARY_CONFIG;
-            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-            
+            if (!db || !userId) return;
             const songName = customName || file.name.split('.').slice(0, -1).join('.');
-            const safePublicId = createSafePublicId(songName); 
-
+            const safePublicId = createSafePublicId(songName);
+            
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', uploadPreset);
-            formData.append('folder', folder);
-            
-            if (customName) {
-                formData.append('public_id', safePublicId);
-            }
-            
-            uploadButton.textContent = "Uploading..."; 
+            formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            formData.append('folder', CLOUDINARY_CONFIG.folder);
+            if (customName) formData.append('public_id', safePublicId);
+
+            uploadButton.textContent = "Uploading...";
             uploadButton.disabled = true;
 
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Cloudinary Upload Failed: ${errorData.error ? errorData.error.message : response.statusText}.`);
-                }
-
-                const data = await response.json();
-                
-                // CORRECCIÓN: Limpiar la URL de la versión (/v12345/) antes de guardar en Firestore
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
                 const cleanUrl = data.secure_url.replace(/\/v[0-9]+\//, '/');
-                
-                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
-                
+
                 const songData = {
                     name: songName,
-                    fileName: file.name,
-                    url: cleanUrl,      // Se guarda la URL limpia
+                    url: cleanUrl,
                     uploadedBy: userId,
                     timestamp: new Date(),
-                    cloudinaryId: data.public_id,
-                    shortName: safePublicId
+                    cloudinaryId: data.public_id
                 };
 
-
-                await addDoc(collection(db, collectionPath), songData);
-                
-                displayStatus(`"${songName}" uploaded successfully! Clean URL link generated.`, 'bg-green-600');
-
-            } catch (error) {
-                console.error("Upload Error:", error);
-                displayStatus(`Error during upload: ${error.message || error}`, 'bg-red-600');
-            } finally {
-                uploadButton.textContent = "Upload";
-                uploadButton.disabled = false;
+                // MEJORA: setDoc con ID fijo para evitar duplicados si el nombre es el mismo
+                await setDoc(doc(db, `artifacts/${appId}/public/data/${SONG_COLLECTION}`, safePublicId), songData, { merge: true });
+                alert("Upload Success!");
+            } catch (e) { alert("Upload Error"); }
+            finally { 
+                uploadButton.textContent = "Upload"; 
+                uploadButton.disabled = false; 
             }
         }
 
-        // --- LÓGICA DE FIREBASE PARA CANCIONES ---
-        
-        function setupSongsListener() {
-            if (!db || !userId) return;
-
-            loadingSpinner.classList.remove('hidden');
+        // Lógica de Renderizado (Simplificada basada en tu index-1)
+        function renderMusicList() {
+            const term = searchInput.value.toLowerCase();
             musicList.innerHTML = '';
+            const filtered = allSongs.filter(s => s.name.toLowerCase().includes(term));
             
-            const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
-            const q = query(collection(db, collectionPath));
-
-            onSnapshot(q, (snapshot) => {
-                loadingSpinner.classList.add('hidden');
-                allSongs = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    allSongs.push({
-                        id: doc.id,
-                        ...data,
-                        timestamp: data.timestamp ? data.timestamp.toDate() : new Date(0)
-                    });
-                });
-                filterAndSortSongs();
-            }, (error) => {
-                console.error("Error fetching songs:", error);
-                loadingSpinner.classList.add('hidden');
-                displayStatus('Error loading list.', 'bg-yellow-600');
+            filtered.forEach(song => {
+                const div = document.createElement('div');
+                div.className = 'song-item p-3 flex flex-col md:flex-row justify-between items-center';
+                div.innerHTML = `
+                    <div class="flex-grow w-full">
+                        <p class="font-semibold text-lg">${song.name}</p>
+                        <p class="text-xs text-gray-400">By: ${userProfiles[song.uploadedBy] || 'User'}</p>
+                        <audio controls class="mt-2 w-full"><source src="${song.url}" type="audio/mp3"></audio>
+                    </div>
+                    <div class="flex space-x-2 mt-2">
+                        <button class="bg-green-600 p-2 rounded text-white font-bold text-xs" onclick="navigator.clipboard.writeText('${song.url}'); alert('Link Copied!')">Copy Link</button>
+                        ${song.uploadedBy === userId ? `<button class="bg-red-600 p-2 rounded text-white font-bold text-xs delete-song" data-id="${song.id}">Delete</button>` : ''}
+                    </div>
+                `;
+                const delBtn = div.querySelector('.delete-song');
+                if(delBtn) delBtn.onclick = () => deleteDoc(doc(db, `artifacts/${appId}/public/data/${SONG_COLLECTION}`, song.id));
+                musicList.appendChild(div);
             });
+            document.getElementById('song-count').textContent = filtered.length;
         }
 
-        function filterAndSortSongs() {
-            let tempSongs = [...allSongs];
-            const searchTerm = searchInput.value.toLowerCase();
-            const sortOrder = document.querySelector('input[name="sort"]:checked').value;
-
-            if (searchTerm) {
-                tempSongs = tempSongs.filter(song => 
-                    song.name.toLowerCase().includes(searchTerm) || 
-                    song.fileName.toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            if (sortOrder === 'alpha') {
-                tempSongs.sort((a, b) => a.name.localeCompare(b.name));
-            } else if (sortOrder === 'newest') {
-                tempSongs.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (sortOrder === 'oldest') {
-                tempSongs.sort((a, b) => a.timestamp - b.timestamp);
-            }
-
-            renderMusicList(tempSongs);
-        }
-        
-        function renderMusicList(songs) {
-            musicList.innerHTML = '';
-            songCountElement.textContent = songs.length;
-            
-            if (songs.length === 0) {
-                noSongsMessage.classList.remove('hidden');
-            } else {
-                noSongsMessage.classList.add('hidden');
-                songs.forEach(song => {
-                    const songElement = createSongElement(song);
-                    musicList.appendChild(songElement);
-                });
-            }
-        }
-
-        function createSongElement(song) {
-            const div = document.createElement('div');
-            div.className = 'song-item p-3 flex flex-col md:flex-row justify-between items-center';
-            div.id = `song-${song.id}`;
-
-            const name = song.name || song.fileName;
-            
-            // CORRECCIÓN: Limpiar la URL de la versión (/v12345/) al mostrar (para links antiguos)
-            const externalLink = song.url.replace(/\/v[0-9]+\//, '/'); 
-            
-            const uploaderName = userProfiles[song.uploadedBy] || `User-${song.uploadedBy.substring(0, 8)}...`;
-
-
-            div.innerHTML = `
-                <div class="flex-grow w-full md:w-auto mb-3 md:mb-0">
-                    <p class="font-semibold text-lg text-gray-100">${name}</p>
-                    <p class="text-xs text-gray-400">URL ID: ${song.cloudinaryId || 'N/A'}</p>
-                    <p class="text-xs text-gray-400">Uploaded by: ${uploaderName}</p>
-                    <p class="text-xs text-gray-400">Date: ${song.timestamp.toLocaleDateString()}</p>
-                    <audio controls class="mt-2 w-full">
-                        <source src="${externalLink}" type="audio/mp3">
-                        Your browser does not support the audio element.
-                    </audio>
-                </div>
-                <div class="flex flex-shrink-0 space-x-2 mt-2 md:mt-0">
-                    <button class="add-to-folder-btn py-2 px-4 rounded-lg text-white font-semibold btn-secondary transition" data-id="${song.id}" data-name="${name}">
-                        Add to Folder
-                    </button>
-                    <button class="copy-btn py-2 px-4 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition" data-url="${externalLink}">
-                        Copy Link
-                    </button>
-                    ${song.uploadedBy === userId ? 
-                        `<button class="delete-btn py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition" data-id="${song.id}" data-cloudinary-id="${song.cloudinaryId}">
-                            Delete
-                        </button>` 
-                        : ''}
-                </div>
-            `;
-
-            div.querySelector('.copy-btn').addEventListener('click', (e) => {
-                const url = e.currentTarget.getAttribute('data-url');
-                copyToClipboard(url);
-            });
-            
-            div.querySelector('.add-to-folder-btn').addEventListener('click', (e) => {
-                songToAddMetadata = {
-                    id: e.currentTarget.getAttribute('data-id'),
-                    name: e.currentTarget.getAttribute('data-name')
-                };
-                openAddSongModal();
-            });
-
-            const deleteBtn = div.querySelector('.delete-btn');
-            if (deleteBtn) {
-                 deleteBtn.addEventListener('click', (e) => {
-                    const songId = e.currentTarget.getAttribute('data-id');
-                    const cloudinaryId = e.currentTarget.getAttribute('data-cloudinary-id');
-                    if (confirm("Are you sure you want to delete this song?")) {
-                        deleteSong(songId, cloudinaryId);
-                    }
-                });
-            }
-
-            return div;
-        }
-        
-        async function deleteSong(songId, cloudinaryId) {
-            if (!db || !userId) return;
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`, songId);
-                await deleteDoc(docRef);
-                displayStatus("Song deleted from record.", 'bg-yellow-600');
-            } catch (error) {
-                console.error("Error deleting song:", error);
-            }
-        }
-        
-        // --- MODAL AÑADIR A CARPETA ---
-
-        function openAddSongModal() {
-            const songNameElement = document.getElementById('song-to-add-name');
-            const folderSelect = document.getElementById('folder-select');
-            const confirmBtn = document.getElementById('confirm-add-song-btn');
-
-            songNameElement.textContent = songToAddMetadata.name;
-            folderSelect.innerHTML = '<option value="" disabled selected>-- Select a folder --</option>';
-            confirmBtn.disabled = true;
-
-            allFolders.forEach(folder => {
-                const option = document.createElement('option');
-                option.value = folder.id;
-                option.textContent = `${folder.name} (${folder.ownerNickname})`;
-                folderSelect.appendChild(option);
-            });
-
-            folderSelect.onchange = () => {
-                confirmBtn.disabled = !folderSelect.value;
+        async function init() {
+            const config = {
+                apiKey: "AIzaSyBipp_qEAamELRQJDGz7wWb6LUDyj7-cRQ",
+                authDomain: "music-host-site.firebaseapp.com",
+                projectId: "music-host-site",
+                appId: "1:761480568190:web:0b9ff1adbe1843c86f672f"
             };
-
-            showModal('addSongModal');
-        }
-        
-        document.getElementById('confirm-add-song-btn').addEventListener('click', async () => {
-            if (!songToAddMetadata || !db || !userId) return;
-            const folderId = document.getElementById('folder-select').value;
-            const statusElement = document.getElementById('add-song-status');
-            const folder = allFolders.find(f => f.id === folderId);
+            const app = initializeApp(config);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            await signInAnonymously(auth);
             
-            if (!folder) return;
-            const existingSong = allSongs.find(s => s.id === songToAddMetadata.id);
-
-            const songRef = {
-                songId: songToAddMetadata.id,
-                songName: songToAddMetadata.name,
-                url: existingSong?.url.replace(/\/v[0-9]+\//, '/'), // Se asegura URL limpia en la carpeta
-                order: folder.songReferences.length + 1,
-            };
-            
-            if (folder.songReferences.some(ref => ref.songId === songRef.songId)) {
-                displayStatus('Song is already in this folder.', 'bg-yellow-600', statusElement);
-                return;
-            }
-
-            try {
-                const folderRef = doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, folderId);
-                await updateDoc(folderRef, { songReferences: [...folder.songReferences, songRef] });
-                displayStatus(`Song added to "${folder.name}"!`, 'bg-green-600', statusElement);
-                hideModal('addSongModal');
-            } catch (error) {
-                console.error("Error adding song:", error);
-            }
-        });
-
-        // --- LÓGICA DE CARPETAS ---
-
-        document.getElementById('create-folder-btn').addEventListener('click', createFolder);
-
-        async function createFolder() {
-            if (!db || !userId) return;
-            const nameInput = document.getElementById('folder-name-input');
-            const statusElement = document.getElementById('folder-creation-status');
-            const folderName = nameInput.value.trim();
-
-            if (!folderName) {
-                displayStatus('Folder name cannot be empty.', 'bg-red-600', statusElement);
-                return;
-            }
-
-            try {
-                const folderData = {
-                    name: folderName,
-                    ownerId: userId,
-                    ownerNickname: userProfiles[userId] || `User-${userId.substring(0, 8)}...`,
-                    songReferences: [], 
-                    createdAt: new Date()
-                };
-                await addDoc(collection(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`), folderData);
-                displayStatus(`Folder created!`, 'bg-green-600', statusElement);
-                nameInput.value = '';
-                setTimeout(() => hideModal('createFolderModal'), 1000);
-            } catch (error) {
-                console.error("Error creating folder:", error);
-            }
-        }
-
-        function setupFoldersListener() {
-            if (!db || !userId) return;
-            const collectionPath = `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`;
-            onSnapshot(query(collection(db, collectionPath)), (snapshot) => {
-                document.getElementById('folder-loading-spinner').classList.add('hidden');
-                allFolders = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    allFolders.push({ id: doc.id, ...data, songReferences: data.songReferences || [] });
-                });
-                renderFoldersList(allFolders);
-                if (currentFolderId) renderFolderDetail(currentFolderId);
-            });
-        }
-
-        function renderFoldersList(folders) {
-            foldersList.innerHTML = '';
-            if (folders.length === 0) {
-                noFoldersMessage.classList.remove('hidden');
-            } else {
-                noFoldersMessage.classList.add('hidden');
-                folders.forEach(folder => {
-                    const div = document.createElement('div');
-                    div.className = 'folder-item p-4 flex justify-between items-center cursor-pointer hover:bg-gray-600 transition';
-                    div.onclick = () => showView(`folderDetail-${folder.id}`);
-                    const count = folder.songReferences.length;
-                    div.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <i data-lucide="folder" class="w-6 h-6 text-yellow-400"></i>
-                            <div>
-                                <p class="font-semibold text-lg text-gray-100">${folder.name}</p>
-                                <p class="text-sm text-gray-400">${count} songs | By: ${folder.ownerNickname}</p>
-                            </div>
-                        </div>
-                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-                    `;
-                    foldersList.appendChild(div);
-                });
-            }
-            lucide.createIcons();
-        }
-
-        function renderFolderDetail(folderId) {
-            const folder = allFolders.find(f => f.id === folderId);
-            const listElement = document.getElementById('folder-songs-list');
-            const isOwner = folder && folder.ownerNickname === userProfiles[userId];
-            folderDetailStatus.classList.add('hidden');
-            
-            if (!folder) return;
-            document.getElementById('folder-detail-name').textContent = folder.name;
-            document.getElementById('folder-detail-owner').textContent = folder.ownerNickname;
-            
-            const songs = folder.songReferences.sort((a, b) => (a.order || 0) - (b.order || 0));
-            listElement.innerHTML = '';
-
-            if (songs.length === 0) {
-                listElement.innerHTML = `<p class="text-center text-gray-500 mt-10">Empty folder.</p>`;
-                saveOrderBtn.disabled = true;
-            } else {
-                songs.forEach((song, idx) => {
-                    const div = document.createElement('div');
-                    div.className = `folder-song-item p-3 flex justify-between items-center bg-gray-600 border border-gray-500 ${isOwner ? 'cursor-move' : 'cursor-default'}`;
-                    div.setAttribute('draggable', isOwner);
-                    div.setAttribute('data-song-id', song.songId);
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userId = user.uid;
                     
-                    // Asegurar URL limpia en la vista de detalle
-                    const cleanSongUrl = song.url.replace(/\/v[0-9]+\//, '/');
+                    // CAMBIO VISUAL CLAVE: Quitamos el rojo/prohibido y activamos el azul/permitido
+                    uploadButton.textContent = "Upload";
+                    uploadButton.disabled = false;
+                    uploadButton.classList.remove('btn-danger');
+                    uploadButton.classList.add('btn-primary');
 
-                    div.innerHTML = `
-                        <div class="flex items-center space-x-3 w-full">
-                            <span class="text-xl font-bold text-gray-400 w-8 text-right">${idx + 1}.</span>
-                            <div class="flex-grow">
-                                <p class="font-medium text-lg">${song.songName}</p>
-                                <audio controls class="mt-1 w-full" style="height: 35px;">
-                                    <source src="${cleanSongUrl}" type="audio/mp3">
-                                </audio>
-                            </div>
-                        </div>
-                        ${isOwner ? `<button class="remove-from-folder-btn p-2 rounded-full text-white bg-red-700 ml-3" data-song-id="${song.songId}"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
-                    `;
-                    listElement.appendChild(div);
-                });
-            }
-            if (isOwner) setupDragAndDrop(listElement);
-            lucide.createIcons();
-        }
-
-        let draggedItem = null;
-        function setupDragAndDrop(container) {
-            const items = container.querySelectorAll('.folder-song-item');
-            items.forEach(item => {
-                item.addEventListener('dragstart', (e) => {
-                    draggedItem = item;
-                    setTimeout(() => item.classList.add('opacity-50'), 0);
-                });
-                item.addEventListener('dragend', () => {
-                    item.classList.remove('opacity-50');
-                    draggedItem = null;
-                });
-                item.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    if (!draggedItem || draggedItem === item) return;
-                    const bounding = item.getBoundingClientRect();
-                    const offset = bounding.y + (bounding.height / 2);
-                    const target = e.clientY < offset ? item : item.nextSibling;
-                    container.insertBefore(draggedItem, target);
-                    saveOrderBtn.disabled = false;
-                });
+                    onSnapshot(collection(db, `artifacts/${appId}/public/data/${SONG_COLLECTION}`), snap => {
+                        allSongs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        renderMusicList();
+                    });
+                    
+                    onSnapshot(collection(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION}`), snap => {
+                        snap.forEach(d => userProfiles[d.id] = d.data().nickname);
+                        renderMusicList();
+                    });
+                }
             });
         }
-
-        saveOrderBtn.addEventListener('click', async () => {
-            if (!currentFolderId || !db) return;
-            const folder = allFolders.find(f => f.id === currentFolderId);
-            const listItems = document.getElementById('folder-songs-list').querySelectorAll('.folder-song-item');
-            const newRefs = Array.from(listItems).map((item, idx) => {
-                const sid = item.getAttribute('data-song-id');
-                const ex = folder.songReferences.find(s => s.songId === sid);
-                return { ...ex, order: idx + 1 };
-            });
-            try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, currentFolderId), { songReferences: newRefs });
-                displayStatus('Order saved!', 'bg-green-600', folderDetailStatus);
-                saveOrderBtn.disabled = true;
-            } catch (error) { console.error(error); }
-        });
-
-        // --- INICIALIZACIÓN ---
-
-        function copyToClipboard(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            displayStatus('Link copied!', 'bg-green-600');
-            document.body.removeChild(textarea);
-        }
-
-        uploadForm.addEventListener('submit', (e) => {
+        
+        document.getElementById('uploadForm').onsubmit = (e) => {
             e.preventDefault();
-            const file = document.getElementById('mp3File').files[0];
-            const custom = document.getElementById('customName').value.trim();
-            if (!file) return;
-            uploadFileAndSaveMetadata(file, custom);
-            uploadForm.reset(); 
-        });
-
-        searchInput.addEventListener('input', filterAndSortSongs);
-        sortRadios.forEach(r => r.addEventListener('change', filterAndSortSongs));
-        document.getElementById('nav-home').addEventListener('click', () => showView('home'));
-        document.getElementById('nav-folders').addEventListener('click', () => showView('folders'));
-        backToFoldersBtn.addEventListener('click', () => showView('folders'));
-        document.getElementById('save-nickname-btn').addEventListener('click', () => saveNickname(document.getElementById('nickname-input').value));
-
-        window.onload = initFirebase;
-        async function initFirebase() {
-            const config = getFirebaseConfig();
-            try {
-                app = initializeApp(config);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                await signInAnonymously(auth);
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        const profileSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/${PROFILE_COLLECTION_NAME}`, userId));
-                        if (profileSnap.exists()) {
-                            userProfiles[userId] = profileSnap.data().nickname;
-                            document.getElementById('nickname-input').value = userProfiles[userId];
-                        }
-                        uploadButton.textContent = "Upload";
-                        uploadButton.disabled = false;
-                        setupProfilesListener();
-                        setupSongsListener();
-                        setupFoldersListener(); 
-                    }
-                });
-            } catch (error) { console.error(error); }
-        }
+            uploadFileAndSaveMetadata(document.getElementById('mp3File').files[0], document.getElementById('customName').value);
+        };
+        searchInput.oninput = renderMusicList;
+        init();
     </script>
 </body>
 </html>
