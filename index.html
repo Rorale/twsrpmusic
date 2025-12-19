@@ -42,12 +42,8 @@
         .btn-primary:hover { background-color: var(--color-primary-hover); }
         .btn-secondary { background-color: #f59e0b; color: white; transition: background-color 0.2s; }
         .btn-secondary:hover { background-color: #d97706; }
-        
         .btn-danger { background-color: var(--color-danger); color: white; transition: background-color 0.2s; }
         .btn-danger:hover { background-color: #dc2626; }
-        
-        button:disabled { cursor: not-allowed; opacity: 0.7; }
-
         .nav-link { cursor: pointer; padding: 8px 12px; border-radius: 6px; }
         .nav-link.active { background-color: var(--color-primary); color: white; }
 
@@ -256,11 +252,19 @@
 
         lucide.createIcons();
 
+        // --- FUNCIONES DE UTILIDAD ---
         function createSafePublicId(text) {
             return text
                 .trim()
                 .replace(/[\\/:*?"<>|&#]/g, '') 
                 .replace(/[\s\-\.]+/g, '_');    
+        }
+
+        // Función crucial para limpiar la URL de la versión /v12345/
+        function getCleanCloudinaryUrl(rawUrl) {
+            // Esta expresión regular busca "/v" seguido de uno o más números entre dos barras inclinadas
+            // y lo reemplaza por una sola barra inclinada, eliminando la versión.
+            return rawUrl.replace(/\/v\d+\//, '/');
         }
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -456,15 +460,15 @@
 
                 const data = await response.json();
                 
-                // CORRECCIÓN: Construir URL limpia sin la versión "v12345..."
-                const cleanUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${data.public_id}.mp3`;
+                // CORRECCIÓN: Limpiar la URL de la versión /v12345/ antes de guardar en Firebase
+                const cleanUrl = getCleanCloudinaryUrl(data.secure_url);
                 
                 const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
                 
                 const songData = {
                     name: songName,            
                     fileName: file.name,
-                    url: cleanUrl, // Guardamos el enlace limpio      
+                    url: cleanUrl, // Guardamos la URL limpia sin versión
                     uploadedBy: userId,
                     timestamp: new Date(),
                     cloudinaryId: data.public_id, 
@@ -474,11 +478,11 @@
 
                 await addDoc(collection(db, collectionPath), songData);
                 
-                displayStatus(`"${songName}" uploaded successfully! Clean URL generated.`, 'bg-green-600');
+                displayStatus(`"${songName}" uploaded successfully! Clean URL link generated.`, 'bg-green-600');
 
             } catch (error) {
                 console.error("Upload Error:", error);
-                displayStatus(`Error during upload: ${error.message || error}`, 'bg-red-600');
+                displayStatus(`Error during upload or registration: ${error.message || error}`, 'bg-red-600');
             } finally {
                 uploadButton.textContent = "Upload";
                 uploadButton.disabled = false;
@@ -606,7 +610,7 @@
                     const songId = e.currentTarget.getAttribute('data-id');
                     const cloudinaryId = e.currentTarget.getAttribute('data-cloudinary-id');
                     
-                    if (confirm("Are you sure you want to delete this song?")) {
+                    if (confirm("Are you sure you want to delete this song? (This only deletes the DB record)")) {
                         deleteSong(songId, cloudinaryId);
                     }
                 });
@@ -621,7 +625,7 @@
                 const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
                 const docRef = doc(db, collectionPath, songId);
                 await deleteDoc(docRef);
-                displayStatus("Song deleted.", 'bg-yellow-600');
+                displayStatus("Song deleted from record.", 'bg-yellow-600');
             } catch (error) {
                 console.error("Error deleting song:", error);
             }
@@ -666,14 +670,14 @@
             };
             
             if (folder.songReferences.some(ref => ref.songId === songRef.songId)) {
-                displayStatus('Already in folder.', 'bg-yellow-600', statusElement);
+                displayStatus('Song is already in this folder.', 'bg-yellow-600', statusElement);
                 return;
             }
 
             try {
                 const folderRef = doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, folderId);
                 await updateDoc(folderRef, { songReferences: [...folder.songReferences, songRef] });
-                displayStatus(`Added to folder!`, 'bg-green-600', statusElement);
+                displayStatus(`Song added to "${folder.name}" successfully!`, 'bg-green-600', statusElement);
                 hideModal('addSongModal');
             } catch (error) {
                 displayStatus(`Error: ${error.message}`, 'bg-red-600', statusElement);
@@ -699,7 +703,7 @@
                     createdAt: new Date()
                 };
                 await addDoc(collection(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`), folderData);
-                displayStatus(`Folder created!`, 'bg-green-600', statusElement);
+                displayStatus(`Folder "${folderName}" created!`, 'bg-green-600', statusElement);
                 nameInput.value = '';
                 setTimeout(() => hideModal('createFolderModal'), 1000);
             } catch (error) {
@@ -717,14 +721,19 @@
         }
 
         function renderFoldersList(folders) {
-            foldersList.innerHTML = folders.length ? '' : '<div class="text-center text-gray-500 mt-10">No folders yet.</div>';
-            folders.forEach(folder => {
-                const div = document.createElement('div');
-                div.className = 'folder-item p-4 flex justify-between items-center cursor-pointer hover:bg-gray-600 transition';
-                div.onclick = () => showView(`folderDetail-${folder.id}`); 
-                div.innerHTML = `<div class="flex items-center space-x-3"><i data-lucide="folder" class="w-6 h-6 text-yellow-400"></i><div><p class="font-semibold text-lg text-gray-100">${folder.name}</p><p class="text-sm text-gray-400">${folder.songReferences.length} songs</p></div></div><i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>`;
-                foldersList.appendChild(div);
-            });
+            foldersList.innerHTML = '';
+            if (folders.length === 0) {
+                noFoldersMessage.classList.remove('hidden');
+            } else {
+                noFoldersMessage.classList.add('hidden');
+                folders.forEach(folder => {
+                    const div = document.createElement('div');
+                    div.className = 'folder-item p-4 flex justify-between items-center cursor-pointer hover:bg-gray-600 transition';
+                    div.onclick = () => showView(`folderDetail-${folder.id}`); 
+                    div.innerHTML = `<div class="flex items-center space-x-3"><i data-lucide="folder" class="w-6 h-6 text-yellow-400"></i><div><p class="font-semibold text-lg text-gray-100">${folder.name}</p><p class="text-sm text-gray-400">${folder.songReferences.length} songs</p></div></div><i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>`;
+                    foldersList.appendChild(div);
+                });
+            }
             lucide.createIcons();
         }
 
@@ -776,7 +785,7 @@
             });
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/${FOLDER_COLLECTION_NAME}`, currentFolderId), { songReferences: newRefs });
-                displayStatus('Order saved!', 'bg-green-600', folderDetailStatus);
+                displayStatus('Folder order saved successfully!', 'bg-green-600', folderDetailStatus);
                 saveOrderBtn.disabled = true;
             } catch (e) { console.error(e); }
         });
@@ -787,7 +796,7 @@
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
-            displayStatus('Link copied!', 'bg-green-600');
+            displayStatus('Link copied to clipboard!', 'bg-green-600');
             document.body.removeChild(textarea);
         }
 
@@ -822,7 +831,6 @@
                         if (profileSnap.exists()) userProfiles[userId] = profileSnap.data().nickname;
                         
                         uploadButton.textContent = "Upload";
-                        uploadButton.className = "w-full py-3 rounded-lg font-bold text-lg btn-primary";
                         uploadButton.disabled = false;
                         
                         setupProfilesListener();
