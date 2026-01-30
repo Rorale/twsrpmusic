@@ -444,11 +444,16 @@ async function uploadFileAndSaveMetadata(file, customName) {
         return;
     }
 
-    // Pon aquí la URL de la WORKER (no la de R2). 
-    // Es la que termina en .workers.dev
-    const workerUrl = "https://tws-audio-uploader.roa-raul-ale.workers.dev/"; 
+    const workerUrl = "https://tws-audio-uploader.roa-raul-ale.workers.dev"; 
     
-    const songName = customName || file.name.split('.').slice(0, -1).join('.');
+    // Preparamos el nombre: si no escribes nada, usa el nombre del archivo original
+    let finalFileName = customName ? customName.trim() : file.name.split('.').slice(0, -1).join('.');
+    
+    // Aseguramos que termine en .mp3 y no tenga espacios raros
+    finalFileName = finalFileName.replace(/\s+/g, '_');
+    if (!finalFileName.toLowerCase().endsWith('.mp3')) {
+        finalFileName += '.mp3';
+    }
     
     uploadButton.textContent = "Subiendo..."; 
     uploadButton.disabled = true;
@@ -456,6 +461,7 @@ async function uploadFileAndSaveMetadata(file, customName) {
     try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('customName', finalFileName); // Enviamos el apodo al Worker
 
         const response = await fetch(workerUrl, {
             method: 'POST',
@@ -465,21 +471,20 @@ async function uploadFileAndSaveMetadata(file, customName) {
         if (!response.ok) throw new Error("Error en el servidor de subida");
 
         const data = await response.json();
-        
-        // Guardamos en la base de datos de Firebase
         const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
         
         const songData = {
-            name: songName,
-            fileName: file.name,
+            name: finalFileName.replace('.mp3', ''),
+            fileName: finalFileName,
             url: data.url, 
             uploadedBy: userId,
             timestamp: new Date(),
-            shortName: songName.replace(/\s+/g, '_')
+            shortName: finalFileName
         };
 
+        // Guardamos en Firebase (esto actualizará o creará el registro)
         await addDoc(collection(db, collectionPath), songData);
-        displayStatus(`"${songName}" subida con éxito!`, 'bg-green-600');
+        displayStatus(`"${finalFileName}" subido y actualizado!`, 'bg-green-600');
 
     } catch (error) {
         console.error("Error:", error);
