@@ -281,7 +281,7 @@
 
         // --- CONFIGURACIÓN DE CLOUDINARY (IMPORTANTE) ---
         const CLOUDINARY_CONFIG = {
-            cloudName: "daj3jaqd9",
+            cloudName: "twsmusic",
             uploadPreset: "tws_music_uploads",
             folder: "music" 
         };
@@ -438,62 +438,72 @@
         }
         
         // --- LÓGICA DE SUBIDA DE ARCHIVOS ---
-async function uploadFileAndSaveMetadata(file, customName) {
-    if (!db || !userId) {
-        displayStatus("Error: No autenticado.", 'bg-red-600');
-        return;
-    }
+        async function uploadFileAndSaveMetadata(file, customName) {
+            if (!db || !userId) {
+                displayStatus("Error: Not authenticated or DB not initialized.", 'bg-red-600');
+                return;
+            }
 
-    const workerUrl = "https://tws-audio-uploader.roa-raul-ale.workers.dev"; 
-    
-    // Preparamos el nombre: si no escribes nada, usa el nombre del archivo original
-    let finalFileName = customName ? customName.trim() : file.name.split('.').slice(0, -1).join('.');
-    
-    // Aseguramos que termine en .mp3 y no tenga espacios raros
-    finalFileName = finalFileName.replace(/\s+/g, '_');
-    if (!finalFileName.toLowerCase().endsWith('.mp3')) {
-        finalFileName += '.mp3';
-    }
-    
-    uploadButton.textContent = "Subiendo..."; 
-    uploadButton.disabled = true;
+            const { cloudName, uploadPreset, folder } = CLOUDINARY_CONFIG;
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            
+            const songName = customName || file.name.split('.').slice(0, -1).join('.');
+            const safePublicId = createSafePublicId(songName); 
 
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('customName', finalFileName); // Enviamos el apodo al Worker
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', uploadPreset);
+            formData.append('folder', folder);
+            
+            if (customName) {
+                formData.append('public_id', safePublicId);
+            }
+            
+            uploadButton.textContent = "Uploading..."; 
+            uploadButton.disabled = true;
 
-        const response = await fetch(workerUrl, {
-            method: 'POST',
-            body: formData,
-        });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                });
 
-        if (!response.ok) throw new Error("Error en el servidor de subida");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Cloudinary Upload Failed: ${errorData.error ? errorData.error.message : response.statusText}.`);
+                }
 
-        const data = await response.json();
-        const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
-        
-        const songData = {
-            name: finalFileName.replace('.mp3', ''),
-            fileName: finalFileName,
-            url: data.url, 
-            uploadedBy: userId,
-            timestamp: new Date(),
-            shortName: finalFileName
-        };
+                const data = await response.json();
+                
+                // CORRECCIÓN: Limpiar la URL de la versión (/v12345/) antes de guardar en Firestore
+                const cleanUrl = data.secure_url.replace(/\/v[0-9]+\//, '/');
+                
+                const collectionPath = `artifacts/${appId}/public/data/${SONG_COLLECTION_NAME}`;
+                
+                const songData = {
+                    name: songName,
+                    fileName: file.name,
+                    url: cleanUrl,      // Se guarda la URL limpia
+                    uploadedBy: userId,
+                    timestamp: new Date(),
+                    cloudinaryId: data.public_id,
+                    shortName: safePublicId
+                };
 
-        // Guardamos en Firebase (esto actualizará o creará el registro)
-        await addDoc(collection(db, collectionPath), songData);
-        displayStatus(`"${finalFileName}" subido y actualizado!`, 'bg-green-600');
 
-    } catch (error) {
-        console.error("Error:", error);
-        displayStatus(`Error: ${error.message}`, 'bg-red-600');
-    } finally {
-        uploadButton.textContent = "Upload";
-        uploadButton.disabled = false;
-    }
-}
+                await addDoc(collection(db, collectionPath), songData);
+                
+                displayStatus(`"${songName}" uploaded successfully! Clean URL link generated.`, 'bg-green-600');
+
+            } catch (error) {
+                console.error("Upload Error:", error);
+                displayStatus(`Error during upload: ${error.message || error}`, 'bg-red-600');
+            } finally {
+                uploadButton.textContent = "Upload";
+                uploadButton.disabled = false;
+            }
+        }
+
         // --- LÓGICA DE FIREBASE PARA CANCIONES ---
         
         function setupSongsListener() {
